@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Button of Dictator</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      color: #fff;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    button {
+      background: red;
+      color: white;
+      font-size: 1.5rem;
+      border: none;
+      padding: 1rem 2rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>button of dictator</h1>
+  <p>no warning. no return. only consequence.</p>
+  <button onclick="document.body.innerHTML='<h1>executed.</h1>'">PRESS</button>
+</body>
+</html>
