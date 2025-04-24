@@ -74,7 +74,7 @@ The system logs its loss. But does not reverse it.
 - `/log.json`: records terminated domains  
 - `/log.html`: public record of disappearance  
 - `/00000.*`: reserved homage to Dokusai Switch  
-- `/00sam.*`: dedicated to Sam, my Contextual Theories Study (CTS) tutor during my most difficult time  
+- `/00sam.*`: dedicated to Sam, my CTS tutor and intellectual anchor through the most turbulent stage of my studies
 
 ---
 
