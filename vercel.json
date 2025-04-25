@@ -2,13 +2,13 @@
   "rewrites": [
     {
       "source": "/",
+      "destination": "/log.html",
       "has": [
         {
           "type": "host",
           "value": "log.buttonofdictator.xyz"
         }
-      ],
-      "destination": "/log.html"
+      ]
     }
   ]
 }
