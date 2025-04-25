@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Terminal Log</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 2rem;
+      font-family: monospace;
+      background-color: #0e0e0e;
+      color: #ddd;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 2rem;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .card {
+      border: 1px solid #444;
+      padding: 1.25rem;
+      background-color: #1b1b1b;
+      border-radius: 6px;
+    }
+
+    .card .domain {
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-bottom: 0.3rem;
+      color: #fff;
+    }
+
+    .card .domain .suffix {
+      font-size: 0.9rem;
+      color: #888;
+    }
+
+    .label {
+      color: #888;
+      font-size: 0.8rem;
+      margin-top: 0.5rem;
+    }
+
+    .value {
+      color: #eee;
+      font-size: 0.9rem;
+    }
+
+    .executed {
+      color: #ff4f4f;
+    }
+
+    .accessed {
+      color: #ffc107;
+    }
+
+    .pending {
+      color: #7fbf7f;
+    }
+
+    .footer {
+      margin-top: 2rem;
+      font-size: 0.75rem;
+      color: #666;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>Terminal Log</h1>
+  <div class="grid">
+    <div class="card">
+      <div class="domain">0df50<span class="suffix">.buttonofdictator.xyz</span></div>
+      <div class="label">Assigned to:</div>
+      <div class="value">Pending</div>
+
+      <div class="label">Status:</div>
+      <div class="value pending">Not Accessed</div>
+
+      <div class="label">Executed by:</div>
+      <div class="value">–</div>
+
+      <div class="label">Time of execution:</div>
+      <div class="value">–</div>
+
+      <div class="label">Following structure built by:</div>
+      <div class="value">LO</div>
+    </div>
+
+    <!-- 你可以复制多份上面的 .card 结构 来填满页面 -->
+  </div>
+
+  <div class="footer">This page statically lists terminal interaction logs.</div>
+</body>
+</html>
