@@ -9,6 +9,10 @@
           "value": "log.buttonofdictator.xyz"
         }
       ]
+    },
+    {
+      "source": "/",
+      "destination": "/home.html"
     }
   ]
 }
