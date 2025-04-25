@@ -1,5 +1,14 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/log.html" }
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "log.buttonofdictator.xyz"
+        }
+      ],
+      "destination": "/log.html"
+    }
   ]
 }
