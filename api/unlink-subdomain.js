@@ -1,3 +1,11 @@
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Only POST requests allowed' });
@@ -10,30 +18,66 @@ export default async function handler(req, res) {
     subdomain = host.replace('.buttonofdictator.xyz', '');
   }
 
-  if (!subdomain) {
-    return res.status(400).json({ message: 'Subdomain not found' });
+  const { username, action } = req.body;
+
+  if (!subdomain || !action) {
+    return res.status(400).json({ message: 'Missing required fields' });
   }
 
-  const fullDomain = `${subdomain}.buttonofdictator.xyz`;
-
   try {
-    const response = await fetch(`https://api.vercel.com/v9/projects/button-of-dictator/aliases/${fullDomain}?teamId=lomagistas-projects`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
-        'Content-Type': 'application/json'
+    if (action === 'access') {
+      await supabase
+        .from('logs')
+        .update({ status: 'accessed', accessTime: new Date().toISOString() })
+        .eq('subdomain', subdomain);
+    } else if (action === 'assign') {
+      if (!username) {
+        return res.status(400).json({ message: 'Missing username for assign action' });
       }
-    });
+      await supabase
+        .from('logs')
+        .update({ assignedTo: username })
+        .eq('subdomain', subdomain);
+    } else if (action === 'terminate') {
+      if (!username) {
+        return res.status(400).json({ message: 'Missing username for terminate action' });
+      }
 
-    if (response.status === 204) {
-      return res.status(200).json({ message: 'Unlinked successfully' });
+      // 1. 先更新Supabase里的状态
+      await supabase
+        .from('logs')
+        .update({
+          terminatedBy: username,
+          terminationTime: new Date().toISOString(),
+          status: 'terminated'
+        })
+        .eq('subdomain', subdomain);
+
+      // 2. 再解绑子域名（用正确的API）
+      const fullDomain = `${subdomain}.buttonofdictator.xyz`;
+
+      const response = await fetch(`https://api.vercel.com/v9/projects/button-of-dictator/aliases/${fullDomain}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${VERCEL_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const unlinkResult = await response.json();
+
+      if (!response.ok) {
+        console.error('Unlink API error:', unlinkResult);
+        return res.status(500).json({ message: 'Unlink failed', detail: unlinkResult });
+      }
     } else {
-      const errorData = await response.json();
-      console.error('Vercel unlink error:', errorData);
-      return res.status(response.status).json({ message: 'Unlink failed', error: errorData });
+      return res.status(400).json({ message: 'Invalid action type' });
     }
+
+    return res.status(200).json({ message: 'Update successful' });
+
   } catch (error) {
-    console.error('Unlink request failed:', error);
-    return res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('API error:', error);
+    return res.status(500).json({ message: 'Update failed', error: error.message });
   }
 }
