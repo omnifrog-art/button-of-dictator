@@ -13,6 +13,7 @@ async function loadLogs() {
   try {
     // ⚡ 查询 logs 表，按 accessTime 升序排序
     const { data, error } = await db.from('logs').select('*').order('accessTime', { ascending: true });
+    console.log('Fetched data:', data);
 
     if (error) throw error;
 
