@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     const response = await fetch(`https://api.vercel.com/v9/projects/button-of-dictator/aliases/${fullDomain}`, {
       method: 'DELETE',
       headers: {
-        Authorization: `Bearer ${process.env.VERCEL_TOKEN}`, // 用环境变量读取你的Vercel Token
+        Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
         'Content-Type': 'application/json'
       }
     });
