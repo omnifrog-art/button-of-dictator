@@ -77,98 +77,55 @@
   </div>
 
   <script>
-    // 打开页面时自动发 access 请求
-    window.addEventListener('DOMContentLoaded', () => {
-      fetch('/api/update-log', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ action: 'access' })
+terminateBtn.addEventListener('click', async () => {
+  const username = usernameInput.value.trim();
+  if (!username) return alert('Please submit your name first.');
+
+  if (!confirm('Are you sure you want to TERMINATE? This action cannot be undone.')) return;
+
+  try {
+    // 先更新 termination 状态
+    const terminateRes = await fetch('/api/update-log', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        username,
+        action: 'terminate'
       })
-      .then(res => res.json())
-      .then(data => console.log('Access logged:', data))
-      .catch(console.error);
     });
 
-    const usernameForm = document.getElementById('username-form');
-    const usernameInput = document.getElementById('username');
-    const terminateBtn = document.getElementById('terminate-btn');
+    const terminateData = await terminateRes.json();
+    console.log('Terminated:', terminateData);
 
-    // 提交用户名（assign）
-    usernameForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const username = usernameInput.value.trim();
-      if (!username) return alert('Please enter your name.');
+    if (!terminateRes.ok) {
+      throw new Error(terminateData.message || 'Failed to record termination');
+    }
 
-      fetch('/api/update-log', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          username,
-          action: 'assign'
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
-        console.log('Name assigned:', data);
-        alert('Name recorded successfully.');
-      })
-      .catch(console.error);
+    // 再删除子域
+    const unlinkRes = await fetch('/api/unlink-subdomain', {
+      method: 'POST'
     });
 
-    // 点击终结按钮（terminate + unlink）
-    terminateBtn.addEventListener('click', async () => {
-      const username = usernameInput.value.trim();
-      if (!username) return alert('Please submit your name first.');
+    const unlinkData = await unlinkRes.json();
+    console.log('Domain removed:', unlinkData);
 
-      if (!confirm('Are you sure you want to TERMINATE? This action cannot be undone.')) return;
+    if (!unlinkRes.ok) {
+      throw new Error(unlinkData.message || 'Failed to remove subdomain');
+    }
 
-      try {
-        // 第一步：记录 termination
-        const terminateRes = await fetch('/api/update-log', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            username,
-            action: 'terminate'
-          })
-        });
+    alert('Termination complete. Subdomain removed.');
+    // 自动刷新页面（应变成404）
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
 
-        const terminateData = await terminateRes.json();
-        console.log('Terminated:', terminateData);
-
-        if (!terminateRes.ok) {
-          throw new Error(terminateData.message || 'Failed to record termination');
-        }
-
-        // 第二步：发 unlink 请求（带空body防止后端出错）
-        const unlinkRes = await fetch('/api/unlink-subdomain', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dummy: true })
-        });
-
-        const unlinkData = await unlinkRes.json();
-        console.log('Unlinked:', unlinkData);
-
-        if (!unlinkRes.ok) {
-          throw new Error(unlinkData.message || 'Failed to unlink subdomain');
-        }
-
-        // ✅ 成功后弹提示+刷新
-        alert('Termination executed. Refreshing...');
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
-
-      } catch (error) {
-        console.error('Termination process failed:', error);
-        alert('Something went wrong: ' + error.message);
-      }
-    });
+  } catch (error) {
+    console.error('Termination process failed:', error);
+    alert('Something went wrong: ' + error.message);
+  }
+});
   </script>
 
 </body>
