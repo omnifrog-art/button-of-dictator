@@ -119,29 +119,50 @@
       .catch(console.error);
     });
 
-    // 点击终结按钮（terminate）
-    terminateBtn.addEventListener('click', () => {
+    // 点击终结按钮（terminate + unlink）
+    terminateBtn.addEventListener('click', async () => {
       const username = usernameInput.value.trim();
       if (!username) return alert('Please submit your name first.');
 
       if (!confirm('Are you sure you want to TERMINATE? This action cannot be undone.')) return;
 
-      fetch('/api/update-log', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          username,
-          action: 'terminate'
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
-        console.log('Terminated:', data);
-        alert('Termination executed.');
-      })
-      .catch(console.error);
+      try {
+        // 第一步：记录 termination
+        const terminateRes = await fetch('/api/update-log', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            username,
+            action: 'terminate'
+          })
+        });
+
+        const terminateData = await terminateRes.json();
+        console.log('Terminated:', terminateData);
+
+        if (!terminateRes.ok) {
+          throw new Error(terminateData.message || 'Failed to record termination');
+        }
+
+        // 第二步：发 unlink 请求
+        const unlinkRes = await fetch('/api/unlink-subdomain', {
+          method: 'POST'
+        });
+
+        const unlinkData = await unlinkRes.json();
+        console.log('Unlinked:', unlinkData);
+
+        if (!unlinkRes.ok) {
+          throw new Error(unlinkData.message || 'Failed to unlink subdomain');
+        }
+
+        alert('Termination executed and subdomain unlinked.');
+      } catch (error) {
+        console.error('Termination process failed:', error);
+        alert('Something went wrong: ' + error.message);
+      }
     });
   </script>
 
