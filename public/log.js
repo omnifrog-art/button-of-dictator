@@ -1,0 +1,56 @@
+// log.js
+const SUPABASE_URL = 'https://你的supabase项目地址.supabase.co';
+const SUPABASE_ANON_KEY = '你的public anon key';
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+async function loadLogs() {
+  const grid = document.getElementById('log-grid');
+  const loading = document.getElementById('loading');
+
+  try {
+    const { data, error } = await db.from('logs').select('*').order('terminationTime', { ascending: true });
+
+    if (error) throw error;
+
+    loading.style.display = 'none';
+
+    const activeLogs = data.filter(log => log.status !== 'pending');
+
+    if (activeLogs.length === 0) {
+      loading.innerText = 'No activities yet.';
+      loading.style.display = 'block';
+      return;
+    }
+
+    activeLogs.forEach(log => {
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      const statusClass = log.status === 'terminated' ? 'executed' : 'accessed';
+
+      card.innerHTML = `
+        <div class="domain">${log.subdomain}<span class="suffix">.buttonofdictator.xyz</span></div>
+        <div class="label">Assigned to:</div>
+        <div class="value">${log.assignedTo || '-'}</div>
+
+        <div class="label">Status:</div>
+        <div class="value ${statusClass}">${log.status}</div>
+
+        <div class="label">Termination triggered by:</div>
+        <div class="value">${log.terminatedBy || '-'}</div>
+
+        <div class="label">Time of termination:</div>
+        <div class="value">${log.terminationTime ? new Date(log.terminationTime).toLocaleString() : '-'}</div>
+      `;
+
+      grid.appendChild(card);
+    });
+  } catch (err) {
+    console.error('Failed to load logs:', err);
+    loading.innerText = 'Failed to load logs.';
+  }
+}
+
+loadLogs();
