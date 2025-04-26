@@ -1,54 +1,47 @@
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
+
+const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Only POST requests allowed' });
   }
 
-  const host = req.headers.host;
-  let subdomain = null;
-
-  if (host.endsWith('buttonofdictator.xyz')) {
-    subdomain = host.replace('.buttonofdictator.xyz', '');
-  }
-
-  if (!subdomain) {
-    return res.status(400).json({ message: 'Subdomain not found in request' });
-  }
-
-  const teamSlug = 'lomagistas-projects'; // 你的 Team slug
-  const projectName = 'button-of-dictator'; // 你的项目名
-  const teamId = 'team_LHRnPMHxhfAzlvjJ2KGScARX'; // 你的 Team ID（你刚找出来的）
-  const fullDomain = `${subdomain}.buttonofdictator.xyz`;
-
-  const unlinkUrl = `https://api.vercel.com/v9/projects/${teamSlug}:${projectName}/aliases/${fullDomain}?teamId=${teamId}`;
-
-  console.log('🔗 Attempting unlink to URL:', unlinkUrl);
-
   try {
-    const response = await fetch(unlinkUrl, {
+    const host = req.headers.host;
+    if (!host || !host.endsWith('buttonofdictator.xyz')) {
+      return res.status(400).json({ message: 'Invalid host' });
+    }
+
+    const subdomain = host.replace('.buttonofdictator.xyz', '');
+    const fullDomain = `${subdomain}.buttonofdictator.xyz`;
+
+    console.log('Trying to remove domain:', fullDomain);
+
+    const response = await fetch(`https://api.vercel.com/v6/domains/${fullDomain}`, {
       method: 'DELETE',
       headers: {
-        Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
+        Authorization: `Bearer ${VERCEL_TOKEN}`,
         'Content-Type': 'application/json'
       }
     });
 
-    const unlinkResult = await response.json();
-    console.log('🔗 Status code:', response.status);
-    console.log('🔗 Full response body:', unlinkResult);
+    const result = await response.json();
 
     if (!response.ok) {
-      if (unlinkResult.error && unlinkResult.error.code === 'not_found') {
-        console.warn('⚠️ Subdomain not found on Vercel. Treat as already unlinked.');
-        return res.status(200).json({ message: 'Subdomain already not found (safe).' });
-      }
-      console.error('❌ Vercel unlink error:', unlinkResult);
-      return res.status(500).json({ message: 'Unlink failed', detail: unlinkResult });
+      console.error('Vercel remove domain error:', result);
+      return res.status(response.status).json({ message: 'Vercel remove failed', details: result });
     }
 
-    return res.status(200).json({ message: 'Unlink successful' });
-
+    console.log('Domain removed successfully:', result);
+    return res.status(200).json({ message: 'Domain successfully removed' });
+    
   } catch (error) {
-    console.error('🔥 Unlink API exception:', error);
-    return res.status(500).json({ message: 'Unlink failed', error: error.message });
+    console.error('API Error:', error);
+    return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 }
