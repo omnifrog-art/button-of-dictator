@@ -18,10 +18,11 @@ export default async function handler(req, res) {
     subdomain = host.replace('.buttonofdictator.xyz', '');
   }
 
-  const { username, action } = req.body;
+  const body = req.body || {};  // 🛡️ 防止req.body为undefined
+  const { username, action } = body;
 
-  if (!subdomain || !action) {
-    return res.status(400).json({ message: 'Missing required fields' });
+  if (!subdomain) {
+    return res.status(400).json({ message: 'Subdomain not found' });
   }
 
   try {
@@ -43,7 +44,6 @@ export default async function handler(req, res) {
         return res.status(400).json({ message: 'Missing username for terminate action' });
       }
 
-      // 1. 先更新Supabase里的状态
       await supabase
         .from('logs')
         .update({
@@ -53,9 +53,8 @@ export default async function handler(req, res) {
         })
         .eq('subdomain', subdomain);
 
-      // 2. 再解绑子域名（用正确的API）
+      // 执行解绑
       const fullDomain = `${subdomain}.buttonofdictator.xyz`;
-
       const response = await fetch(`https://api.vercel.com/v9/projects/button-of-dictator/aliases/${fullDomain}`, {
         method: 'DELETE',
         headers: {
@@ -67,7 +66,7 @@ export default async function handler(req, res) {
       const unlinkResult = await response.json();
 
       if (!response.ok) {
-        console.error('Unlink API error:', unlinkResult);
+        console.error('Vercel unlink error:', unlinkResult);
         return res.status(500).json({ message: 'Unlink failed', detail: unlinkResult });
       }
     } else {
