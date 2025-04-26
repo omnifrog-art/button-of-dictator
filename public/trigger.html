@@ -1,35 +1,149 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Button of Dictator</title>
+  <meta charset="UTF-8">
+  <title>Button of Dictator - Trigger</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #000;
-      color: #fff;
+    body {
+      background: #0e0e0e;
+      color: #ddd;
       font-family: monospace;
       display: flex;
       flex-direction: column;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
       height: 100vh;
+      margin: 0;
     }
-    button {
-      background: red;
-      color: white;
+
+    h1 {
       font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: #fff;
+    }
+
+    form, .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      width: 250px;
+    }
+
+    input {
+      padding: 0.5rem;
+      font-size: 1rem;
+      background: #1b1b1b;
+      border: 1px solid #444;
+      color: #fff;
+      border-radius: 4px;
+    }
+
+    button {
+      padding: 0.75rem;
+      font-size: 1rem;
+      background: #ff4f4f;
+      color: #fff;
       border: none;
-      padding: 1rem 2rem;
+      border-radius: 4px;
       cursor: pointer;
+    }
+
+    button:hover {
+      background: #ff1f1f;
+    }
+
+    .small-btn {
+      background: #5c5c5c;
+    }
+
+    .small-btn:hover {
+      background: #777;
     }
   </style>
 </head>
 <body>
-  <h1>button of dictator</h1>
-  <p>no warning. no return. only consequence.</p>
-  <button onclick="document.body.innerHTML='<h1>executed.</h1>'">PRESS</button>
+
+  <h1>Button of Dictator</h1>
+
+  <form id="username-form">
+    <input type="text" id="username" placeholder="Enter your name" required>
+    <button type="submit" class="small-btn">Submit Name</button>
+  </form>
+
+  <div class="actions">
+    <button id="terminate-btn">Terminate</button>
+  </div>
+
+  <script>
+    // 打开页面时自动发 access 请求
+    window.addEventListener('DOMContentLoaded', () => {
+      fetch('/api/update-log', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ action: 'access' })
+      })
+      .then(res => res.json())
+      .then(data => console.log('Access logged:', data))
+      .catch(console.error);
+    });
+
+    const usernameForm = document.getElementById('username-form');
+    const usernameInput = document.getElementById('username');
+    const terminateBtn = document.getElementById('terminate-btn');
+
+    // 提交用户名（assign）
+    usernameForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const username = usernameInput.value.trim();
+      if (!username) return alert('Please enter your name.');
+
+      fetch('/api/update-log', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username,
+          action: 'assign'
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        console.log('Name assigned:', data);
+        alert('Name recorded successfully.');
+      })
+      .catch(console.error);
+    });
+
+    // 点击终结按钮（terminate）
+    terminateBtn.addEventListener('click', () => {
+      const username = usernameInput.value.trim();
+      if (!username) return alert('Please submit your name first.');
+
+      if (!confirm('Are you sure you want to TERMINATE? This action cannot be undone.')) return;
+
+      fetch('/api/update-log', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username,
+          action: 'terminate'
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        console.log('Terminated:', data);
+        alert('Termination executed.');
+      })
+      .catch(console.error);
+    });
+  </script>
+
 </body>
 </html>
