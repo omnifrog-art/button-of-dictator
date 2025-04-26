@@ -14,14 +14,17 @@ export default async function handler(req, res) {
     return res.status(400).json({ message: 'Subdomain not found in request' });
   }
 
-  const teamSlug = 'lomagistas-projects'; // 你的 Team 名
+  const teamSlug = 'lomagistas-projects'; // 你的 Team slug
   const projectName = 'button-of-dictator'; // 你的项目名
+  const teamId = 'team_LHRnPMHxhfAzlvjJ2KGScARX'; // 你的 Team ID（你刚找出来的）
   const fullDomain = `${subdomain}.buttonofdictator.xyz`;
 
-  console.log('🔗 Attempting to unlink:', fullDomain);
+  const unlinkUrl = `https://api.vercel.com/v9/projects/${teamSlug}:${projectName}/aliases/${fullDomain}?teamId=${teamId}`;
+
+  console.log('🔗 Attempting unlink to URL:', unlinkUrl);
 
   try {
-    const response = await fetch(`https://api.vercel.com/v9/projects/${teamSlug}:${projectName}/aliases/${fullDomain}`, {
+    const response = await fetch(unlinkUrl, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
@@ -30,7 +33,8 @@ export default async function handler(req, res) {
     });
 
     const unlinkResult = await response.json();
-    console.log('🔎 Vercel API response:', unlinkResult);
+    console.log('🔗 Status code:', response.status);
+    console.log('🔗 Full response body:', unlinkResult);
 
     if (!response.ok) {
       if (unlinkResult.error && unlinkResult.error.code === 'not_found') {
