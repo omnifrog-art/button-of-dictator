@@ -1,10 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
-// 用你的Supabase配置替换下面两行
-const SUPABASE_URL = 'https://qvslxmokvbjhslbxdhtb.supabase.co';
-const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2c2x4bW9rdmJqaHNsYnhkaHRiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTY4MzUzNiwiZXhwIjoyMDYxMjU5NTM2fQ.6d7NbQZx_s3PMFrbKK945u2N1WDOYIXW6W4BdDYwpj8';
+// 从环境变量读取 Supabase 项目配置（⚡ 安全）
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+// 创建 Supabase 客户端（用service_role key）
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -26,13 +27,17 @@ export default async function handler(req, res) {
 
   try {
     if (action === 'access') {
-      // 访问页面，更新 status
+      // 初次访问trigger页面：标记accessed + 记录accessTime
       await supabase
         .from('logs')
-        .update({ status: 'accessed' })
+        .update({
+          status: 'accessed',
+          accessTime: new Date().toISOString()
+        })
         .eq('subdomain', subdomain);
+
     } else if (action === 'assign') {
-      // 提交用户名，更新 assignedTo
+      // 提交用户名
       if (!username) {
         return res.status(400).json({ message: 'Missing username for assign action' });
       }
@@ -40,8 +45,9 @@ export default async function handler(req, res) {
         .from('logs')
         .update({ assignedTo: username })
         .eq('subdomain', subdomain);
+
     } else if (action === 'terminate') {
-      // 点击按钮，更新终止相关字段
+      // 点击终止按钮
       if (!username) {
         return res.status(400).json({ message: 'Missing username for terminate action' });
       }
@@ -53,6 +59,7 @@ export default async function handler(req, res) {
           status: 'terminated'
         })
         .eq('subdomain', subdomain);
+
     } else {
       return res.status(400).json({ message: 'Invalid action type' });
     }
