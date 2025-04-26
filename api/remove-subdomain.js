@@ -1,5 +1,3 @@
-// /api/remove-subdomain.js
-
 import fetch from 'node-fetch';
 
 export default async function handler(req, res) {
@@ -7,22 +5,29 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Only POST requests allowed' });
   }
 
-  const host = req.headers.host;
+  const host = req.headers.host || '';
+  if (!host.endsWith('.buttonofdictator.xyz')) {
+    return res.status(400).json({ message: 'Invalid domain' });
+  }
+
   const subdomain = host.replace('.buttonofdictator.xyz', '');
   const fullDomain = `${subdomain}.buttonofdictator.xyz`;
 
-  const VERCEL_TOKEN = process.env.VERCEL_TOKEN; // 你的token
-  const PROJECT_NAME = 'button-of-dictator'; // 你的项目名，注意准确拼写！
-  const TEAM_ID = 'team_LHRnPMHxhfAzlvjJ2KGScARX'; // 你的Team ID，刚刚确认过了
+  const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
+  const PROJECT_NAME = 'button-of-dictator';
+  const TEAM_ID = 'team_LHRnPMHxhfAzlvjJ2KGScARX';
 
   try {
-    const response = await fetch(`https://api.vercel.com/v9/projects/${PROJECT_NAME}/domains/${fullDomain}?teamId=${TEAM_ID}`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${VERCEL_TOKEN}`,
-        'Content-Type': 'application/json'
+    const response = await fetch(
+      `https://api.vercel.com/v9/projects/${PROJECT_NAME}/domains/${fullDomain}?teamId=${TEAM_ID}`,
+      {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${VERCEL_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
       }
-    });
+    );
 
     const data = await response.json();
 
