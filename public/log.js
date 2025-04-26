@@ -1,4 +1,5 @@
 // log.js
+
 const SUPABASE_URL = 'https://qvslxmokvbjhslbxdhtb.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2c2x4bW9rdmJqaHNsYnhkaHRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2ODM1MzYsImV4cCI6MjA2MTI1OTUzNn0.fJ9jTo9yrKWZQ-Hif2-YJo5jWF1RolIsIeZSVB5TPxA';
 
@@ -10,12 +11,14 @@ async function loadLogs() {
   const loading = document.getElementById('loading');
 
   try {
-    const { data, error } = await db.from('logs').select('*').order('terminationTime', { ascending: true });
+    // ⚡ 查询 logs 表，按 accessTime 升序排序
+    const { data, error } = await db.from('logs').select('*').order('accessTime', { ascending: true });
 
     if (error) throw error;
 
     loading.style.display = 'none';
 
+    // ⚡ 过滤掉 pending 状态，只显示 accessed 和 terminated
     const activeLogs = data.filter(log => log.status !== 'pending');
 
     if (activeLogs.length === 0) {
@@ -24,6 +27,7 @@ async function loadLogs() {
       return;
     }
 
+    // ⚡ 遍历并渲染每个active记录
     activeLogs.forEach(log => {
       const card = document.createElement('div');
       card.className = 'card';
