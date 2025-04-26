@@ -1,5 +1,3 @@
-// /api/unlink-subdomain.js
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Only POST requests allowed' });
@@ -19,7 +17,7 @@ export default async function handler(req, res) {
   const fullDomain = `${subdomain}.buttonofdictator.xyz`;
 
   try {
-    const response = await fetch(`https://api.vercel.com/v9/projects/button-of-dictator/aliases/${fullDomain}`, {
+    const response = await fetch(`https://api.vercel.com/v9/projects/button-of-dictator/aliases/${fullDomain}?teamId=lomagistas-projects`, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
