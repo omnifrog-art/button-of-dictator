@@ -1,6 +1,6 @@
 // log.js
-const SUPABASE_URL = 'https://你的supabase项目地址.supabase.co';
-const SUPABASE_ANON_KEY = '你的public anon key';
+const SUPABASE_URL = 'https://qvslxmokvbjhslbxdhtb.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2c2x4bW9rdmJqaHNsYnhkaHRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2ODM1MzYsImV4cCI6MjA2MTI1OTUzNn0.fJ9jTo9yrKWZQ-Hif2-YJo5jWF1RolIsIeZSVB5TPxA';
 
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
