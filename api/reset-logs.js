@@ -12,6 +12,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    // 只重置 status 是 accessed 或 terminated 的记录！
     const { error } = await supabase
       .from('logs')
       .update({
@@ -21,11 +22,11 @@ export default async function handler(req, res) {
         terminationTime: null,
         accessTime: null
       })
-      .neq('subdomain', ''); // 保护性措施，防止误操作空行
+      .in('status', ['accessed', 'terminated']); // 👈 只操作这些
 
     if (error) throw error;
 
-    return res.status(200).json({ message: 'All logs reset successfully' });
+    return res.status(200).json({ message: 'All applicable logs reset successfully' });
   } catch (err) {
     console.error('Reset logs error:', err);
     return res.status(500).json({ message: 'Failed to reset logs', error: err.message });
