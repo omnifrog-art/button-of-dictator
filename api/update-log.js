@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-// 从环境变量读取 Supabase 项目配置（⚡ 安全）
+// 从环境变量读取 Supabase 项目配置（安全）
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// 创建 Supabase 客户端（用service_role key）
+// 创建 Supabase 客户端（用 service_role key）
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 export default async function handler(req, res) {
@@ -15,7 +15,7 @@ export default async function handler(req, res) {
   const host = req.headers.host;
   let subdomain = null;
 
-  if (host.endsWith('buttonofdictator.xyz')) {
+  if (host && host.endsWith('buttonofdictator.xyz')) {
     subdomain = host.replace('.buttonofdictator.xyz', '');
   }
 
@@ -25,9 +25,22 @@ export default async function handler(req, res) {
     return res.status(400).json({ message: 'Missing required fields' });
   }
 
+  // ===== 防爬虫检测（只对访问行为拦截） =====
+  const userAgent = req.headers['user-agent'] || '';
+  const botKeywords = ['bot', 'crawler', 'spider', 'curl', 'ahrefs', 'python-requests', 'axios'];
+
+  if (action === 'access') {
+    const isBot = botKeywords.some(keyword => userAgent.toLowerCase().includes(keyword));
+    if (isBot) {
+      console.warn(`Blocked bot access attempt from User-Agent: ${userAgent}`);
+      return res.status(403).json({ message: 'Bot access blocked' });
+    }
+  }
+  // =========================================
+
   try {
     if (action === 'access') {
-      // 初次访问trigger页面：标记accessed + 记录accessTime
+      // 初次访问trigger页面：标记 accessed + 记录 accessTime
       await supabase
         .from('logs')
         .update({
