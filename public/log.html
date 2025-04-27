@@ -76,8 +76,36 @@
   <!-- 引入Supabase官方JS库 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
-  <!-- 你自己的逻辑 -->
+  <!-- 引入你的 log.js -->
   <script src="log.js"></script>
+
+  <!-- 单独加一个 resetLogs 功能（只在 console 调用，不影响正常逻辑） -->
+  <script>
+    async function resetLogs() {
+      const supabase = window.supabase.createClient(
+        'https://qvslxmokvbjhslbxdhtb.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz...（你的anon key，保持完整）'
+      );
+
+      const { error } = await supabase
+        .from('logs')
+        .update({
+          status: 'pending',
+          assignedTo: null,
+          terminatedBy: null,
+          terminationTime: null,
+          accessTime: null
+        })
+        .neq('status', 'pending'); // 只重置非pending的
+
+      if (error) {
+        console.error('Reset failed:', error);
+      } else {
+        console.log('✅ Logs have been reset.');
+        window.location.reload();
+      }
+    }
+  </script>
 
 </body>
 </html>
