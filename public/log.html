@@ -73,39 +73,31 @@
 
   <div class="footer">This page dynamically lists terminal interaction logs.</div>
 
-  <!-- 引入Supabase官方JS库 -->
+  <!-- 引入 Supabase 官方 SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
-  <!-- 引入你的 log.js -->
+  <!-- 引入你自己的 log.js -->
   <script src="log.js"></script>
 
-  <!-- 单独加一个 resetLogs 功能（只在 console 调用，不影响正常逻辑） -->
+  <!-- 添加 console专用 resetLogs() -->
   <script>
     async function resetLogs() {
-      const supabase = window.supabase.createClient(
-        'https://qvslxmokvbjhslbxdhtb.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz...（你的anon key，保持完整）'
-      );
+      try {
+        const res = await fetch('/api/reset-logs', { method: 'POST' });
+        const data = await res.json();
 
-      const { error } = await supabase
-        .from('logs')
-        .update({
-          status: 'pending',
-          assignedTo: null,
-          terminatedBy: null,
-          terminationTime: null,
-          accessTime: null
-        })
-        .neq('status', 'pending'); // 只重置非pending的
-
-      if (error) {
-        console.error('Reset failed:', error);
-      } else {
-        console.log('✅ Logs have been reset.');
-        window.location.reload();
+        if (!res.ok) {
+          console.error('Reset failed:', data);
+          alert('Reset failed: ' + (data.error || data.message));
+        } else {
+          console.log('✅ Logs have been reset.');
+          window.location.reload();
+        }
+      } catch (err) {
+        console.error('Reset error:', err);
+        alert('Reset error: ' + err.message);
       }
     }
   </script>
-
 </body>
 </html>
