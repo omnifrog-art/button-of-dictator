@@ -1,0 +1,37 @@
+# .github/workflows/refresh.yml
+name: Refresh sub-domains
+
+# 触发条件 —— 两种：
+#   ① 每 12 小时跑一次（UTC 时间的 0-12-24 点）
+#   ② 手动点击 “Run workflow”
+on:
+  schedule:
+    - cron: '0 */12 * * *'
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # ① 拉取仓库代码
+      - uses: actions/checkout@v4
+
+      # ② 安装 Python（这里选 3.11，也可以 3.10 / 3.12）
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # ③ 安装脚本依赖（目前只用到 requests）
+      - name: Install deps
+        run: pip install requests
+
+      # ④ 运行维护脚本
+      - name: Run maintainer
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python cron/subdomain_maintainer.py
