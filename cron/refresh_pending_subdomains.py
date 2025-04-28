@@ -3,7 +3,7 @@
 
 import os
 import requests
-from datetime import datetime, timedelta, timezone  # ✅ 增加 timezone
+from datetime import datetime, timedelta, timezone
 
 # 配置
 SUPA_URL = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
@@ -23,7 +23,7 @@ def main():
         print("❌ Missing Supabase env vars.")
         return
 
-    now = datetime.now(timezone.utc)   # ✅ 保证now是UTC-aware
+    now = datetime.now(timezone.utc)
     cutoff = now - timedelta(minutes=10)
 
     query = f"{SUPA_URL}/rest/v1/logs?select=id,status,accessTime,terminationTime&status=eq.accessed&terminationTime=is.null"
@@ -39,7 +39,10 @@ def main():
     for entry in data:
         access_time = entry.get("accessTime")
         if access_time:
-            access_dt = datetime.fromisoformat(access_time.replace('Z', '+00:00'))  # access_dt是aware
+            # 标准化Supabase返回的timestamp
+            standardized_time = access_time.replace(' ', 'T').replace('+00', '+00:00')
+            access_dt = datetime.fromisoformat(standardized_time)
+
             if access_dt < cutoff:
                 stale_ids.append(entry['id'])
 
