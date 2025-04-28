@@ -45,5 +45,12 @@
         }
       ]
     }
-  ]
+  ],
+  "overrides": {
+    "trigger.html": {
+      "headers": {
+        "cache-control": "no-store"
+      }
+    }
+  }
 }
