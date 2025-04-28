@@ -1,9 +1,8 @@
-name: Refresh sub-domains
+name: Refresh Subdomains
 
 on:
   schedule:
-    # 每 12 小时跑一次（UTC 0 点、12 点）
-    - cron: '0 */12 * * *'
+    - cron: '0 */12 * * *'  # 每12小时 UTC时间刷新一次
   workflow_dispatch:      # 允许手动触发
 
 jobs:
@@ -19,12 +18,14 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install deps
-        run: pip install requests
+      - name: Install Dependencies
+        run: |
+          pip install requests
 
-      - name: Run maintainer
+      - name: Run Subdomain Maintainer
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: python cron/subdomain_maintainer.py
+        run: |
+          python cron/subdomain_maintainer.py
