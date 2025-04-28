@@ -39,7 +39,6 @@ def main():
     for entry in data:
         access_time = entry.get("accessTime")
         if access_time:
-            # 标准化Supabase返回的timestamp
             standardized_time = access_time.replace(' ', 'T').replace('+00', '+00:00')
             access_dt = datetime.fromisoformat(standardized_time)
 
@@ -55,7 +54,8 @@ def main():
     patch_url = f"{SUPA_URL}/rest/v1/logs?id=in.({','.join(map(str, stale_ids))})"
     payload = {
         "status": "pending",
-        "accessTime": None
+        "accessTime": None,
+        "assignedTo": None  # ✅ 清空用户名
     }
 
     try:
