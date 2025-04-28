@@ -1,77 +1,66 @@
 import { createClient } from '@supabase/supabase-js';
 
-// 从环境变量读取 Supabase 项目配置（安全）
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// ── 1. Supabase 配置 ──────────────────────────────────────────────
+const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase      = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 创建 Supabase 客户端（用 service_role key）
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+// ── 2. Bot UA 关键词，可自行增删 ──────────────────────────────────
+const BOT_KEYWORDS = [
+  'bot', 'crawler', 'spider', 'curl',
+  'ahrefs', 'python-requests', 'axios', 'wget'
+];
 
+// ── 3. Serverless Handler ───────────────────────────────────────
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
+  if (req.method !== 'POST')
     return res.status(405).json({ message: 'Only POST requests allowed' });
-  }
 
-  const host = req.headers.host;
-  let subdomain = null;
+  // 取得子域名前缀
+  const host = req.headers.host || '';
+  if (!host.endsWith('buttonofdictator.xyz'))
+    return res.status(400).json({ message: 'Invalid host' });
 
-  if (host && host.endsWith('buttonofdictator.xyz')) {
-    subdomain = host.replace('.buttonofdictator.xyz', '');
-  }
+  const subdomain = host.replace('.buttonofdictator.xyz', '');
+  const { username, action } = req.body || {};
 
-  const { username, action } = req.body;
-
-  if (!subdomain || !action) {
+  if (!subdomain || !action)
     return res.status(400).json({ message: 'Missing required fields' });
-  }
 
-  // ===== 防爬虫检测（只对访问行为拦截） =====
-  const userAgent = req.headers['user-agent'] || '';
-  const botKeywords = ['bot', 'crawler', 'spider', 'curl', 'ahrefs', 'python-requests', 'axios'];
-
+  // ── 4. 防爬虫：仅拦截 access 行为 ───────────────────────────────
   if (action === 'access') {
-    const isBot = botKeywords.some(keyword => userAgent.toLowerCase().includes(keyword));
+    const ua = (req.headers['user-agent'] || '').toLowerCase();
+    const isBot = BOT_KEYWORDS.some(k => ua.includes(k));
     if (isBot) {
-      console.warn(`Blocked bot access attempt from User-Agent: ${userAgent}`);
+      console.warn(`[bot-block] sub=${subdomain}  ua=${ua}`);
       return res.status(403).json({ message: 'Bot access blocked' });
     }
   }
-  // =========================================
 
   try {
+    // ── 5. 根据 action 更新 ──────────────────────────────────────
     if (action === 'access') {
-      // 初次访问trigger页面：标记 accessed + 记录 accessTime
-      await supabase
-        .from('logs')
-        .update({
-          status: 'accessed',
-          accessTime: new Date().toISOString()
-        })
-        .eq('subdomain', subdomain);
+      await supabase.from('logs').update({
+        status: 'accessed',
+        accessTime: new Date().toISOString()
+      }).eq('subdomain', subdomain);
 
     } else if (action === 'assign') {
-      // 提交用户名
-      if (!username) {
-        return res.status(400).json({ message: 'Missing username for assign action' });
-      }
-      await supabase
-        .from('logs')
-        .update({ assignedTo: username })
-        .eq('subdomain', subdomain);
+      if (!username)
+        return res.status(400).json({ message: 'Missing username for assign' });
+
+      await supabase.from('logs').update({ assignedTo: username })
+                    .eq('subdomain', subdomain);
 
     } else if (action === 'terminate') {
-      // 点击终止按钮
-      if (!username) {
-        return res.status(400).json({ message: 'Missing username for terminate action' });
-      }
-      await supabase
-        .from('logs')
-        .update({
-          terminatedBy: username,
-          terminationTime: new Date().toISOString(),
-          status: 'terminated'
-        })
-        .eq('subdomain', subdomain);
+      if (!username)
+        return res.status(400).json({ message: 'Missing username for terminate' });
+
+      await supabase.from('logs').update({
+        terminatedBy: username,
+        terminationTime: new Date().toISOString(),
+        status: 'terminated'
+      }).eq('subdomain', subdomain);
 
     } else {
       return res.status(400).json({ message: 'Invalid action type' });
@@ -79,8 +68,8 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ message: 'Update successful' });
 
-  } catch (error) {
-    console.error('Supabase update error:', error);
-    return res.status(500).json({ message: 'Update failed', error: error.message });
+  } catch (err) {
+    console.error('Supabase update error:', err);
+    return res.status(500).json({ message: 'Update failed', error: err.message });
   }
 }
