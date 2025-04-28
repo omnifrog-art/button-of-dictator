@@ -16,11 +16,13 @@
       height: 100vh;
       margin: 0;
     }
+
     h1 {
       font-size: 1.5rem;
       margin-bottom: 1rem;
       color: #fff;
     }
+
     form, .actions {
       display: flex;
       flex-direction: column;
@@ -28,6 +30,7 @@
       margin-bottom: 2rem;
       width: 250px;
     }
+
     input {
       padding: 0.5rem;
       font-size: 1rem;
@@ -36,6 +39,7 @@
       color: #fff;
       border-radius: 4px;
     }
+
     button {
       padding: 0.75rem;
       font-size: 1rem;
@@ -45,12 +49,15 @@
       border-radius: 4px;
       cursor: pointer;
     }
+
     button:hover {
       background: #ff1f1f;
     }
+
     .small-btn {
       background: #5c5c5c;
     }
+
     .small-btn:hover {
       background: #777;
     }
@@ -104,7 +111,7 @@
         .catch(console.error);
       });
 
-      // Terminate按钮
+      // 点击终结按钮 (先 terminate 成功，再 remove domain)
       terminateBtn.addEventListener('click', async () => {
         const username = usernameInput.value.trim();
         if (!username) return alert('Please submit your name first.');
@@ -112,7 +119,7 @@
         if (!confirm('Are you sure you want to TERMINATE? This action cannot be undone.')) return;
 
         try {
-          // Step 1: terminate
+          // 第一步：terminate
           const terminateRes = await fetch('/api/update-log', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -126,11 +133,14 @@
 
           console.log('Terminate status updated:', terminateData);
 
-          // 给 Supabase 落盘时间
-          await new Promise(resolve => setTimeout(resolve, 300));
+          // 给Supabase一点时间落盘
+          await new Promise(resolve => setTimeout(resolve, 1000));
 
-          // Step 2: remove domain
-          const removeRes = await fetch('/api/remove-subdomain', { method: 'POST' });
+          // 第二步：remove
+          const removeRes = await fetch('/api/remove-subdomain', {
+            method: 'POST'
+          });
+
           const removeData = await removeRes.json();
           if (!removeRes.ok) {
             throw new Error(removeData.message || 'Failed to remove subdomain');
@@ -138,51 +148,14 @@
 
           console.log('Subdomain removed:', removeData);
 
-          // Step 3: wait until fully deleted from Vercel
-          await waitForFullTermination();
-
-          // Step 4: 强制刷新，带上no-cache
-          window.location.reload(true);
+          alert('Termination complete. Subdomain removed.');
+          setTimeout(() => window.location.reload(), 3000);
 
         } catch (error) {
           console.error('Termination process failed:', error);
           alert('Something went wrong: ' + error.message);
         }
       });
-
-      // 辅助函数：轮询检测域名和log状态
-      async function waitForFullTermination() {
-        const maxRetries = 10;
-        let attempt = 0;
-        const delay = 1000; // 1秒
-
-        while (attempt < maxRetries) {
-          attempt++;
-
-          try {
-            const [subRes, logRes] = await Promise.all([
-              fetch('/api/check-subdomain', { method: 'GET' }),
-              fetch('/api/check-log-status', { method: 'GET' })
-            ]);
-
-            const subData = await subRes.json();
-            const logData = await logRes.json();
-
-            console.log(`Check attempt ${attempt}: domain exists=${subData.exists}, log status=${logData.status}`);
-
-            if (subData.exists === false && logData.status === 'terminated') {
-              console.log('✓ Confirmed terminated and domain deleted.');
-              return;
-            }
-          } catch (err) {
-            console.error('Polling error:', err);
-          }
-
-          await new Promise(resolve => setTimeout(resolve, delay));
-        }
-
-        console.warn('⚠️ Timeout: termination might not be fully completed.');
-      }
     });
   </script>
 
