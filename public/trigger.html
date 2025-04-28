@@ -16,13 +16,11 @@
       height: 100vh;
       margin: 0;
     }
-
     h1 {
       font-size: 1.5rem;
       margin-bottom: 1rem;
       color: #fff;
     }
-
     form, .actions {
       display: flex;
       flex-direction: column;
@@ -30,7 +28,6 @@
       margin-bottom: 2rem;
       width: 250px;
     }
-
     input {
       padding: 0.5rem;
       font-size: 1rem;
@@ -39,7 +36,6 @@
       color: #fff;
       border-radius: 4px;
     }
-
     button {
       padding: 0.75rem;
       font-size: 1rem;
@@ -49,15 +45,12 @@
       border-radius: 4px;
       cursor: pointer;
     }
-
     button:hover {
       background: #ff1f1f;
     }
-
     .small-btn {
       background: #5c5c5c;
     }
-
     .small-btn:hover {
       background: #777;
     }
@@ -85,7 +78,7 @@
       // 页面加载时记录访问状态
       fetch('/api/update-log', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'access' })
       })
       .then(res => res.json())
@@ -100,7 +93,7 @@
 
         fetch('/api/update-log', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, action: 'assign' })
         })
         .then(res => res.json())
@@ -111,7 +104,7 @@
         .catch(console.error);
       });
 
-      // 点击终结按钮 (先 terminate 成功，再 remove domain)
+      // 点击终结按钮
       terminateBtn.addEventListener('click', async () => {
         const username = usernameInput.value.trim();
         if (!username) return alert('Please submit your name first.');
@@ -122,7 +115,7 @@
           // 第一步：terminate
           const terminateRes = await fetch('/api/update-log', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, action: 'terminate' })
           });
 
@@ -130,13 +123,12 @@
           if (!terminateRes.ok) {
             throw new Error(terminateData.message || 'Failed to record termination');
           }
-
           console.log('Terminate status updated:', terminateData);
 
-          // 给Supabase一点时间落盘
+          // 给 Supabase 一点时间落盘
           await new Promise(resolve => setTimeout(resolve, 300));
 
-          // 第二步：remove
+          // 第二步：remove subdomain
           const removeRes = await fetch('/api/remove-subdomain', {
             method: 'POST'
           });
@@ -145,11 +137,34 @@
           if (!removeRes.ok) {
             throw new Error(removeData.message || 'Failed to remove subdomain');
           }
-
           console.log('Subdomain removed:', removeData);
 
-          alert('Termination complete. Subdomain removed.');
-          setTimeout(() => window.location.reload(), 2000);
+          alert('Termination complete. Checking domain removal...');
+
+          // 第三步：不断轮询，直到确认域名不存在
+          const maxChecks = 10; // 最多检查10次
+          let checks = 0;
+
+          const checkInterval = setInterval(async () => {
+            checks++;
+            try {
+              const checkRes = await fetch('/api/check-subdomain');
+              const checkData = await checkRes.json();
+
+              if (!checkData.exists) {
+                clearInterval(checkInterval);
+                console.log('Confirmed domain removal. Reloading...');
+                window.location.href = window.location.href.split('?')[0] + '?t=' + Date.now();
+              } else if (checks >= maxChecks) {
+                clearInterval(checkInterval);
+                console.warn('Domain still exists after multiple checks.');
+                alert('Warning: Domain may not be fully removed yet. Try refreshing manually.');
+              }
+
+            } catch (error) {
+              console.error('Error checking domain:', error);
+            }
+          }, 1000);
 
         } catch (error) {
           console.error('Termination process failed:', error);
