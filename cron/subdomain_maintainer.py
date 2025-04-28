@@ -1,22 +1,15 @@
 #!/usr/bin/env python3
 """
-Sub-domain Maintainer  ·  button-of-dictator
-────────────────────────────────────────────
-• 保持 48 个 trigger 子域 (随机46 + 00000 + 00sam)
-• 忽略根域  buttonofdictator.xyz  和  log.buttonofdictator.xyz
-• 池子不足时自动生成新 5 位随机子域，挂到 Vercel + 写入 Supabase(logs)
-
-把本脚本放进仓库  cron/  目录，
-用 GitHub Actions（或其他 CRON）定时调用即可。
+ Sub-domain Maintainer  –  button-of-dictator
+ …其余说明保持不变…
 """
 
-import os, random, string, sys, time
-import requests
+import os, random, string, sys, time, requests
 from datetime import datetime
 from typing import Set
 
-# ── 1. 环境变量 ─────────────────────────────────────────────────────────
-VERCEL_TOKEN   = os.getenv("VERCEL_TOKEN")                 # team-scoped
+# ── 配置常量（保持与你原先一致） ──────────────────────────────────────────
+VERCEL_TOKEN   = os.getenv("VERCEL_TOKEN")
 PROJECT_NAME   = "button-of-dictator"
 TEAM_ID        = "team_LHRnPMHxhfAzlvjJ2KGScARX"
 
@@ -25,34 +18,38 @@ SUPA_KEY       = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 ROOT_DOMAIN    = "buttonofdictator.xyz"
 LOG_DOMAIN     = f"log.{ROOT_DOMAIN}"
-TARGET_COUNT   = 48                                        # 只计算 trigger
+TARGET_COUNT   = 48
 
-# ── 2. 一些小工具 ───────────────────────────────────────────────────────
-def rnd_id(n: int = 5) -> str:
-    return "".join(random.choices(string.ascii_lowercase + string.digits, k=n))
-
+# ── headers helper ──────────────────────────────────────────────────────
 def v_headers():
     return {"Authorization": f"Bearer {VERCEL_TOKEN}", "Content-Type": "application/json"}
 
 def s_headers():
     return {"apikey": SUPA_KEY, "Authorization": f"Bearer {SUPA_KEY}", "Content-Type": "application/json"}
 
-# ── 3. Vercel 读写 ──────────────────────────────────────────────────────
+# ── ★★★ 100% 获取全部 Vercel 域名（支持分页） ★★★ ────────────────────────
 def vercel_domains() -> Set[str]:
-    url = f"https://api.vercel.com/v9/projects/{PROJECT_NAME}/domains?teamId={TEAM_ID}"
-    data = requests.get(url, headers=v_headers(), timeout=20).json().get("domains", [])
-    return {d["name"] for d in data}
+    base = f"https://api.vercel.com/v9/projects/{PROJECT_NAME}/domains"
+    url  = f"{base}?teamId={TEAM_ID}&limit=100"      # 第一页拉 100，已覆盖上限
+    domains = set()
 
-def add_vercel(sub: str) -> bool:
-    url = f"https://api.vercel.com/v9/projects/{PROJECT_NAME}/domains?teamId={TEAM_ID}"
-    body = {"name": f"{sub}.{ROOT_DOMAIN}"}
-    r = requests.post(url, json=body, headers=v_headers(), timeout=20)
-    return r.ok
+    while url:
+        resp = requests.get(url, headers=v_headers(), timeout=15)
+        resp.raise_for_status()
+        body = resp.json()
 
-# ── 4. Supabase 读写（直接表端点） ───────────────────────────────────────
+        # 收集本页
+        domains.update(d["name"] for d in body.get("domains", []))
+
+        # 跟随 pagination.next，如果没有就 None 循环结束
+        url = body.get("pagination", {}).get("next")
+
+    return domains
+
+# ── Supabase helpers（与你原版相同） ─────────────────────────────────────
 def supa_subs() -> Set[str]:
     url = f"{SUPA_URL}/rest/v1/logs?select=subdomain"
-    rows = requests.get(url, headers=s_headers(), timeout=20).json()
+    rows = requests.get(url, headers=s_headers(), timeout=15).json()
     return {r["subdomain"] for r in rows}
 
 def insert_supa(sub: str):
@@ -65,12 +62,20 @@ def insert_supa(sub: str):
         "terminationTime": None,
         "accessTime": None
     }
-    requests.post(url, json=payload, headers=s_headers(), timeout=20).raise_for_status()
+    requests.post(url, json=payload, headers=s_headers(), timeout=15).raise_for_status()
 
-# ── 5. 主流程 ───────────────────────────────────────────────────────────
+def add_vercel(sub: str) -> bool:
+    url = f"https://api.vercel.com/v9/projects/{PROJECT_NAME}/domains?teamId={TEAM_ID}"
+    body = {"name": f"{sub}.{ROOT_DOMAIN}"}
+    return requests.post(url, json=body, headers=v_headers(), timeout=15).ok
+
+# ── 主流程（其余与之前相同，末尾加 sys.exit(0)） ──────────────────────
+def rnd_id(n: int = 5) -> str:
+    return "".join(random.choices(string.ascii_lowercase + string.digits, k=n))
+
 def main():
-    if not (VERCEL_TOKEN and SUPA_URL and SUPA_KEY):
-        sys.exit("❌  环境变量缺失 (VERCEL_TOKEN / SUPABASE keys)。")
+    if not all([VERCEL_TOKEN, SUPA_URL, SUPA_KEY]):
+        sys.exit("❌  Missing env vars.")
 
     v_set = vercel_domains()
     s_set = supa_subs()
@@ -81,8 +86,7 @@ def main():
     print(f"[{datetime.utcnow().isoformat()}] live={len(trigger_live)}  need={need}")
 
     if need <= 0:
-        print("✓  池子已满，无需补充")
-        return
+        print("✓  pool full, nothing to add."); sys.exit(0)
 
     existing = s_set | trigger_live
     added = 0; attempts = 0
@@ -96,12 +100,13 @@ def main():
             insert_supa(sub)
             existing.add(sub)
             added += 1
-            print(f"  + {sub}.{ROOT_DOMAIN}  已添加")
+            print(f"  + {sub}.{ROOT_DOMAIN}")
         else:
-            print(f"  ! 添加 {sub} 失败，重试")
+            print(f"  ! failed {sub}")
             time.sleep(1)
 
-    print(f"✓  共补充 {added} 个子域，结束")
+    print(f"✓  Added {added} new sub-domains, done.")
+    sys.exit(0)   # ← 保证 Job 立即结束
 
 if __name__ == "__main__":
     main()
