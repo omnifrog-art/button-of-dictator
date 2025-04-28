@@ -1,6 +1,6 @@
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ message: 'Only GET requests allowed' });
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return res.status(405).json({ message: 'Only GET or POST allowed' });
   }
 
   const host = req.headers.host || '';
@@ -28,7 +28,6 @@ export default async function handler(req, res) {
     );
 
     if (response.status === 404) {
-      // 域名不存在了，确认被删除
       return res.status(200).json({ exists: false });
     }
 
@@ -39,7 +38,6 @@ export default async function handler(req, res) {
       return res.status(response.status).json({ message: 'Domain check failed', detail: data });
     }
 
-    // 如果还能查到，说明域名还在
     return res.status(200).json({ exists: true });
 
   } catch (error) {
