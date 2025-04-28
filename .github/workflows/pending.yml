@@ -1,0 +1,30 @@
+name: Refresh Pending Subdomains
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # 每10分钟执行一次
+  workflow_dispatch:
+
+jobs:
+  refresh-pending:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          pip install requests
+
+      - name: Run Refresh Pending Subdomains
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          python cron/refresh_pending_subdomains.py
