@@ -134,7 +134,7 @@
           console.log('Terminate status updated:', terminateData);
 
           // 给Supabase一点时间落盘
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 2000));
 
           // 第二步：remove
           const removeRes = await fetch('/api/remove-subdomain', {
@@ -149,7 +149,7 @@
           console.log('Subdomain removed:', removeData);
 
           alert('Termination complete. Subdomain removed.');
-          setTimeout(() => window.location.reload(), 5000);
+          setTimeout(() => window.location.reload(), 10000);
 
         } catch (error) {
           console.error('Termination process failed:', error);
