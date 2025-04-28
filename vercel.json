@@ -34,5 +34,16 @@
       "source": "/",
       "destination": "/trigger.html"
     }
+  ],
+  "headers": [
+    {
+      "source": "/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    }
   ]
 }
