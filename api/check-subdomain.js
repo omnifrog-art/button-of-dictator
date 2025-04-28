@@ -3,11 +3,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Only GET requests allowed' });
   }
 
-  const { subdomain } = req.query;
-
-  if (!subdomain) {
-    return res.status(400).json({ message: 'Missing subdomain parameter' });
+  const host = req.headers.host || '';
+  if (!host.endsWith('.buttonofdictator.xyz')) {
+    return res.status(400).json({ message: 'Invalid domain' });
   }
+
+  const subdomain = host.replace('.buttonofdictator.xyz', '');
+  const fullDomain = `${subdomain}.buttonofdictator.xyz`;
 
   const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
   const PROJECT_NAME = 'button-of-dictator';
@@ -31,8 +33,7 @@ export default async function handler(req, res) {
       return res.status(domainRes.status).json({ message: 'Failed to list domains', detail: domainData });
     }
 
-    // 检查子域名是否存在
-    const fullDomain = `${subdomain}.buttonofdictator.xyz`;
+    // 查当前 subdomain 是否存在
     const exists = domainData.domains.some(d => d.name === fullDomain);
 
     return res.status(200).json({ exists });
