@@ -37,6 +37,15 @@
   ],
   "headers": [
     {
+      "source": "/",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
       "source": "/:path*",
       "headers": [
         {
@@ -45,12 +54,5 @@
         }
       ]
     }
-  ],
-  "overrides": {
-    "trigger.html": {
-      "headers": {
-        "cache-control": "no-store"
-      }
-    }
-  }
+  ]
 }
