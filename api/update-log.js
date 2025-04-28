@@ -16,7 +16,6 @@ export default async function handler(req, res) {
   if (req.method !== 'POST')
     return res.status(405).json({ message: 'Only POST requests allowed' });
 
-  // 取得子域名前缀
   const host = req.headers.host || '';
   if (!host.endsWith('buttonofdictator.xyz'))
     return res.status(400).json({ message: 'Invalid host' });
@@ -40,17 +39,36 @@ export default async function handler(req, res) {
   try {
     // ── 5. 根据 action 更新 ──────────────────────────────────────
     if (action === 'access') {
-      await supabase.from('logs').update({
-        status: 'accessed',
-        accessTime: new Date().toISOString()
-      }).eq('subdomain', subdomain);
+      // 查找当前 subdomain 的记录
+      const { data: existingLogs, error } = await supabase
+        .from('logs')
+        .select('accessTime')
+        .eq('subdomain', subdomain)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      // 如果 accessTime 为空，才更新
+      if (!existingLogs?.accessTime) {
+        await supabase.from('logs').update({
+          status: 'accessed',
+          accessTime: new Date().toISOString()
+        }).eq('subdomain', subdomain);
+      } else {
+        // accessTime 已存在，只更新 status
+        await supabase.from('logs').update({
+          status: 'accessed'
+        }).eq('subdomain', subdomain);
+      }
 
     } else if (action === 'assign') {
       if (!username)
         return res.status(400).json({ message: 'Missing username for assign' });
 
-      await supabase.from('logs').update({ assignedTo: username })
-                    .eq('subdomain', subdomain);
+      await supabase.from('logs').update({
+        assignedTo: username
+      }).eq('subdomain', subdomain);
 
     } else if (action === 'terminate') {
       if (!username)
