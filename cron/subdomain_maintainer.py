@@ -1,13 +1,9 @@
-#!/usr/bin/env python3
-"""
- Sub-domain Maintainer  –  button-of-dictator (Safe Enhanced Version)
-"""
+# cron/subdomain_maintainer.py (全新 Supabase 驱动版)
 
 import os, random, string, sys, time, requests
 from datetime import datetime
-from typing import Set
 
-# └── 配置常量
+# --- 环境变量读取 ---
 VERCEL_TOKEN   = os.getenv("VERCEL_TOKEN")
 PROJECT_NAME   = "button-of-dictator"
 TEAM_ID        = "team_LHRnPMHxhfAzlvjJ2KGScARX"
@@ -16,36 +12,28 @@ SUPA_URL       = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
 SUPA_KEY       = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 ROOT_DOMAIN    = "buttonofdictator.xyz"
-LOG_DOMAIN     = f"log.{ROOT_DOMAIN}"
 TARGET_COUNT   = 48
 
-# └── headers helpers
+# --- 辅助函数 ---
 def v_headers():
     return {"Authorization": f"Bearer {VERCEL_TOKEN}", "Content-Type": "application/json"}
 
 def s_headers():
     return {"apikey": SUPA_KEY, "Authorization": f"Bearer {SUPA_KEY}", "Content-Type": "application/json"}
 
-# └── Vercel全部域名
-def vercel_domains() -> Set[str]:
-    base = f"https://api.vercel.com/v9/projects/{PROJECT_NAME}/domains"
-    url  = f"{base}?teamId={TEAM_ID}&limit=100"
-    domains = set()
+def supa_active_subs() -> set:
+    url = f"{SUPA_URL}/rest/v1/logs?select=subdomain,status"
+    resp = requests.get(url, headers=s_headers(), timeout=15)
+    resp.raise_for_status()
+    data = resp.json()
+    return {r["subdomain"] for r in data if r["status"] != "terminated"}
 
-    while url:
-        resp = requests.get(url, headers=v_headers(), timeout=15)
-        resp.raise_for_status()
-        body = resp.json()
-        domains.update(d["name"] for d in body.get("domains", []))
-        url = body.get("pagination", {}).get("next")
-
-    return domains
-
-# └── Supabase helpers
-def supa_subs() -> Set[str]:
+def supa_all_subs() -> set:
     url = f"{SUPA_URL}/rest/v1/logs?select=subdomain"
-    rows = requests.get(url, headers=s_headers(), timeout=15).json()
-    return {r["subdomain"] for r in rows}
+    resp = requests.get(url, headers=s_headers(), timeout=15)
+    resp.raise_for_status()
+    data = resp.json()
+    return {r["subdomain"] for r in data}
 
 def insert_supa(sub: str):
     url = f"{SUPA_URL}/rest/v1/logs"
@@ -57,57 +45,53 @@ def insert_supa(sub: str):
         "terminationTime": None,
         "accessTime": None
     }
-    requests.post(url, json=payload, headers=s_headers(), timeout=15).raise_for_status()
+    resp = requests.post(url, json=payload, headers=s_headers(), timeout=15)
+    resp.raise_for_status()
 
-# └── Add domain to Vercel project
 def add_vercel(sub: str) -> bool:
     url = f"https://api.vercel.com/v9/projects/{PROJECT_NAME}/domains?teamId={TEAM_ID}"
     body = {"name": f"{sub}.{ROOT_DOMAIN}"}
-    return requests.post(url, json=body, headers=v_headers(), timeout=15).ok
+    resp = requests.post(url, json=body, headers=v_headers(), timeout=15)
+    return resp.ok
 
-# └── Random id generator
 def rnd_id(n: int = 5) -> str:
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=n))
 
-# └── Main workflow
+# --- 主程序 ---
 def main():
     if not all([VERCEL_TOKEN, SUPA_URL, SUPA_KEY]):
-        sys.exit("❌  Missing env vars.")
+        sys.exit("❌ Missing env vars.")
 
-    v_set = vercel_domains()
-    s_set = supa_subs()
+    active_subs = supa_active_subs()
+    all_subs    = supa_all_subs()
 
-    print("Fetched domains:", v_set)
-    
-    # Only domains ending with ROOT_DOMAIN and NOT starting with log.
-    trigger_live = {d.split('.')[0] for d in v_set if d.endswith(f".{ROOT_DOMAIN}") and not d.startswith("log.")}
-    need = TARGET_COUNT - len(trigger_live)
+    live_count = len(active_subs)
+    need_count = TARGET_COUNT - live_count
 
-    print(f"[{datetime.utcnow().isoformat()}] live={len(trigger_live)}  need={need}")
+    print(f"[{datetime.utcnow().isoformat()}] live={live_count}  need={need_count}")
 
-    if need <= 0:
-        print("✓  pool full, nothing to add.")
+    if need_count <= 0:
+        print("✓ Pool full, nothing to add.")
         sys.exit(0)
 
-    existing = s_set | trigger_live
     added = 0
     attempts = 0
 
-    while added < need and attempts < 200:
+    while added < need_count and attempts < 200:
         attempts += 1
         sub = rnd_id()
-        if sub in existing:
+        if sub in all_subs:
             continue
         if add_vercel(sub):
             insert_supa(sub)
-            existing.add(sub)
+            all_subs.add(sub)
             added += 1
             print(f"  + {sub}.{ROOT_DOMAIN}")
         else:
-            print(f"  ! failed {sub}")
+            print(f"  ! Failed {sub}")
             time.sleep(1)
 
-    print(f"✓  Added {added} new sub-domains, done.")
+    print(f"✓ Added {added} new sub-domains, done.")
     sys.exit(0)
 
 if __name__ == "__main__":
