@@ -1,9 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 
 // ── 1. Supabase 配置 ──────────────────────────────────────────────
-const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase      = createClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── 2. Bot UA 关键词，可自行增删 ──────────────────────────────────
 const BOT_KEYWORDS = [
@@ -26,37 +26,36 @@ export default async function handler(req, res) {
   if (!subdomain || !action)
     return res.status(400).json({ message: 'Missing required fields' });
 
-  // ── 4. 防爬虫：仅拦截 access 行为 ───────────────────────────────
-  if (action === 'access') {
-    const ua = (req.headers['user-agent'] || '').toLowerCase();
-    const isBot = BOT_KEYWORDS.some(k => ua.includes(k));
-    if (isBot) {
-      console.warn(`[bot-block] sub=${subdomain}  ua=${ua}`);
-      return res.status(403).json({ message: 'Bot access blocked' });
-    }
-  }
-
   try {
-    // ── 5. 根据 action 更新 ──────────────────────────────────────
     if (action === 'access') {
-      // 查找当前 subdomain 的记录
-      const { data: existingLogs, error } = await supabase
+      // ── 4.1 防止爬虫访问触发 ──────────────────────────────
+      const ua = (req.headers['user-agent'] || '').toLowerCase();
+      const isBot = BOT_KEYWORDS.some(k => ua.includes(k));
+      const isBrowser = ua.includes('mozilla'); // 正常浏览器基本都有"mozilla"
+
+      if (isBot || !isBrowser) {
+        console.warn(`[skip-access] suspected bot access: ${ua}`);
+        return res.status(403).json({ message: 'Bot or automated access detected' });
+      }
+
+      // ── 4.2 只在第一次真正访问时打 accessTime ──────────────
+      const { data: existing, error: fetchError } = await supabase
         .from('logs')
         .select('accessTime')
         .eq('subdomain', subdomain)
         .limit(1)
         .maybeSingle();
 
-      if (error) throw error;
+      if (fetchError) throw fetchError;
 
-      // 如果 accessTime 为空，才更新
-      if (!existingLogs?.accessTime) {
+      if (!existing?.accessTime) {
+        // 首次访问，记录时间+改状态
         await supabase.from('logs').update({
           status: 'accessed',
           accessTime: new Date().toISOString()
         }).eq('subdomain', subdomain);
       } else {
-        // accessTime 已存在，只更新 status
+        // 非首次，仅刷新状态（防止旧访问被覆盖时间）
         await supabase.from('logs').update({
           status: 'accessed'
         }).eq('subdomain', subdomain);
