@@ -209,7 +209,6 @@ h1 {
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1.25rem;
 }
-.card {
 /* 毛玻璃卡片（叠顶+边缘模糊+微凸起） */
 .card {
   position: relative;
