@@ -263,7 +263,7 @@ h1 {
   .card::before{ display:none; }
 }
 
-.domain { display: inline; font-size: 1.05rem; font-weight: 700; color: #4d4d4d; }
+.domain { display: inline; font-size: 1.05rem; font-weight: 700; color: #000; }
 .suffix { font-size: .9rem; color: #4d4d4d; font-weight: 500; }
 .kv { display: grid; grid-template-columns: 120px 1fr; gap: .25rem .75rem; margin-top: .5rem; }
 .label { color: var(--muted); font-size: .8rem; }
