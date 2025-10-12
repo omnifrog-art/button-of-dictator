@@ -264,10 +264,10 @@ h1 {
 }
 
 .domain { display: inline; font-size: 1.05rem; font-weight: 700; color: #fff; }
-.suffix { font-size: .9rem; color: var(--muted); font-weight: 500; }
+.suffix { font-size: .9rem; color: #4d4d4d; font-weight: 500; }
 .kv { display: grid; grid-template-columns: 120px 1fr; gap: .25rem .75rem; margin-top: .5rem; }
 .label { color: var(--muted); font-size: .8rem; }
-.value { color: #eee; font-size: .9rem; min-width: 0; word-break: break-word; }
+.value { color: #fff; font-size: .9rem; min-width: 0; word-break: break-word; }
 
 .badge { font-size: .75rem; font-weight: 700; letter-spacing: .06em; }
 .pending { color: var(--ok); }
