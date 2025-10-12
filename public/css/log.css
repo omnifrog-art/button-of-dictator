@@ -183,7 +183,7 @@ header {
 h1 {
   font-size: clamp(1.25rem, 2.5vw, 1.6rem);
   margin: 0;
-  color: #4d4d4d;
+  color: #000;
   text-transform: uppercase;
   letter-spacing: .08em;
 }
