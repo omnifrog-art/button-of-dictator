@@ -210,45 +210,88 @@ h1 {
   gap: 1.25rem;
 }
 
-/* 磨砂 + 边缘更糊，但不影响卡内文字 */
+/* === Frosted card with edge-thick blur + subtle dispersion ring === */
+/* 结合你刚才那段，已保留数值与表现，不会模糊卡内文字 */
+
 .card{
+  /* 基础磨砂（不糊内容） */
   position: relative;
   isolation: isolate;
   border-radius: var(--radius);
   border: 1px solid rgba(255,255,255,0.07);
-  padding: 1rem;                              /* ← 恢复这里的 padding */
+  padding: 1rem;
   background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(24px) saturate(115%);  /* 只作用于背后背景，不糊内容 */
+  backdrop-filter: blur(24px) saturate(115%);
   -webkit-backdrop-filter: blur(24px) saturate(115%);
   overflow: clip;
+
+  /* 阴影/描边与交互 */
   box-shadow:
     0 5px 12px rgba(0,0,0,.20),
     inset 0 0 0 1px rgba(255,255,255,.04);
   transition: transform .18s ease, box-shadow .18s ease, border-color .25s ease;
+
+  /* dispersion ring 可调参数 */
+  --rim: 2px;                 /* 色散环宽度（1~3px） */
+  --dispersion-opacity: .28;  /* 常态透明度 */
+  --dispersion-sat: 135%;     /* 饱和度 */
+  --dispersion-hue: 0deg;     /* 常态色相微调 */
 }
 
-/* 边缘加厚的磨砂（下层），中央更清晰 */
+/* 边缘加厚的磨砂：只在边缘出现，更有厚度感 */
 .card::before{
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  z-index: 0;                 /* ← 在内容下层，所以不糊文字 */
+  z-index: 0;                 /* 下层，不糊文字 */
   pointer-events: none;
-  backdrop-filter: blur(32px);
-  -webkit-backdrop-filter: blur(18px);
 
-  /* 只让这层出现在“边缘” */
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+
+  /* 让这层只在“边缘”可见，中心更清晰 */
   -webkit-mask: radial-gradient(110% 110% at 50% 50%,
-                  rgba(0,0,0,0) 0%,
-                  rgba(0,0,0,0) 65%,
+                  transparent 0%,
+                  transparent 65%,
                   #000 100%);
           mask: radial-gradient(110% 110% at 50% 50%,
-                  rgba(0,0,0,0) 0%,
-                  rgba(0,0,0,0) 65%,
+                  transparent 0%,
+                  transparent 65%,
                   #000 100%);
 }
 
+/* 玻璃色散边缘环：极细、仅边缘显示，不遮内容 */
+.card::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1; /* 覆盖在内容上方，但仅 2px 环，几乎不挡字 */
+
+  /* 低调的 RGB 色散 */
+  background:
+    conic-gradient(from 210deg at 50% 50%,
+      rgba(255, 90, 90, .55) 0 120deg,
+      rgba( 90,255,140, .55) 120deg 240deg,
+      rgba( 90,160,255, .55) 240deg 360deg);
+
+  /* 仅显示边缘环（内容区挖空） */
+  padding: var(--rim);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask-composite: exclude;
+
+  /* 轻微柔化/混合，营造折射质感 */
+  filter: saturate(var(--dispersion-sat)) hue-rotate(var(--dispersion-hue)) blur(.2px);
+  mix-blend-mode: screen;
+  opacity: var(--dispersion-opacity);
+  transition: opacity .25s ease, filter .25s ease;
+}
+
+/* 悬停：轻微上抬 + 阴影增强 + 色散环稍亮/轻偏色 */
 .card:hover{
   transform: translateY(-2px);
   border-color: rgba(255,255,255,.10);
@@ -256,11 +299,16 @@ h1 {
     0 8px 16px rgba(0,0,0,.30),
     inset 0 0 0 1px rgba(255,255,255,.05);
 }
+.card:hover::after{
+  --dispersion-opacity: .36;
+  --dispersion-hue: 6deg;
+}
 
-/* 兜底：不支持 backdrop-filter 时 */
+/* 兜底：不支持 backdrop-filter 时，保持可读性 */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){
   .card{ background: rgba(40,40,40,.75); }
-  .card::before{ display:none; }
+  .card::before{ display:none; }  /* 关闭边缘加厚磨砂 */
+  /* ::after 的细环仍可保留；若想关闭可加：.card::after{display:none;} */
 }
 
 .domain { display: inline; font-size: 1.05rem; font-weight: 700; color: #fff; }
