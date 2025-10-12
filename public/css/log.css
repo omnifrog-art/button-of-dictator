@@ -218,8 +218,8 @@ h1 {
   border: 1px solid rgba(255,255,255,0.07);
   padding: 1rem;                              /* ← 恢复这里的 padding */
   background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(12px) saturate(115%);  /* 只作用于背后背景，不糊内容 */
-  -webkit-backdrop-filter: blur(12px) saturate(115%);
+  backdrop-filter: blur(24px) saturate(115%);  /* 只作用于背后背景，不糊内容 */
+  -webkit-backdrop-filter: blur(24px) saturate(115%);
   overflow: clip;
   box-shadow:
     0 5px 12px rgba(0,0,0,.20),
@@ -235,7 +235,7 @@ h1 {
   border-radius: inherit;
   z-index: 0;                 /* ← 在内容下层，所以不糊文字 */
   pointer-events: none;
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(32px);
   -webkit-backdrop-filter: blur(18px);
 
   /* 只让这层出现在“边缘” */
