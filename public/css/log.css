@@ -183,7 +183,7 @@ header {
 h1 {
   font-size: clamp(1.25rem, 2.5vw, 1.6rem);
   margin: 0;
-  color: #fff;
+  color: #4d4d4d;
   text-transform: uppercase;
   letter-spacing: .08em;
 }
@@ -263,11 +263,11 @@ h1 {
   .card::before{ display:none; }
 }
 
-.domain { display: inline; font-size: 1.05rem; font-weight: 700; color: #fff; }
+.domain { display: inline; font-size: 1.05rem; font-weight: 700; color: #4d4d4d; }
 .suffix { font-size: .9rem; color: #4d4d4d; font-weight: 500; }
 .kv { display: grid; grid-template-columns: 120px 1fr; gap: .25rem .75rem; margin-top: .5rem; }
 .label { color: var(--muted); font-size: .8rem; }
-.value { color: #fff; font-size: .9rem; min-width: 0; word-break: break-word; }
+.value { color: #6d6d6d; font-size: .9rem; min-width: 0; word-break: break-word; }
 
 .badge { font-size: .75rem; font-weight: 700; letter-spacing: .06em; }
 .pending { color: var(--ok); }
