@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8" />
-  <title>Trigger</title>
+  <title>Terminal Log</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Project stylesheet for this page -->
@@ -101,94 +101,98 @@
         </div>
 
         <script>
-(function () {
-  const track = document.querySelector('.scrolling-track');
-  if (!track) return;
+          (function () {
+            const track = document.querySelector('.scrolling-track');
+            if (!track) return;
 
-  const shells = Array.from(track.querySelectorAll('.bg-text-shell'));
-  const items = Array.from(track.querySelectorAll('.bg-text'));
+            const shells = Array.from(track.querySelectorAll('.bg-text-shell'));
+            const items = Array.from(track.querySelectorAll('.bg-text'));
 
-  // 动画参数
-  const speed = 0.5;           // px/帧（原速度）
-  let step = 0;                // 一次完整循环应位移的距离
-  let pos = 0;                 // 当前 translateX 偏移（正值向左）
-  let rafId = null;
+            // 动画参数
+            const speed = 0.5;                 // px/帧（你原先的速度）
+            let step = 0;                    // 一次完整循环应位移的距离
+            let pos = 0;                    // 当前 translateX 偏移（正值向左）
+            let rafId = null;
 
-  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            // 用户减少动画偏好
+            const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // 等字体就绪，再测量（fallback 安全）
-  async function waitForFonts() {
-    if (document.fonts && document.fonts.ready) {
-      try { await document.fonts.ready; } catch (e) {}
-    }
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-  }
+            // 等字体就绪，再测量（fallback 安全）
+            async function waitForFonts() {
+              if (document.fonts && document.fonts.ready) {
+                try { await document.fonts.ready; } catch (e) { }
+              }
+              // 再等两帧，确保回流完成
+              await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+            }
 
-  // 计算循环步长：用相邻两个 shell 的 offsetLeft 之差
-  function computeStep() {
-    if (shells.length >= 2) {
-      const a = shells[0].offsetLeft;
-      const b = shells[1].offsetLeft;
-      const d = b - a;
-      if (d > 0) return d;
-    }
-    // 兜底：文字宽度 + 10vw（与旧逻辑一致）
-    const itemWidth = items[0]?.offsetWidth || 0;
-    const gap = window.innerWidth * 0.1;
-    return itemWidth + gap;
-  }
+            // 计算循环步长：用相邻两个 shell 的 offsetLeft 之差
+            function computeStep() {
+              if (shells.length >= 2) {
+                const a = shells[0].offsetLeft;
+                const b = shells[1].offsetLeft;
+                const d = b - a;
+                if (d > 0) return d;
+              }
+              // 兜底：文字宽度 + 10vw（与旧逻辑一致）
+              const itemWidth = items[0]?.offsetWidth || 0;
+              const gap = window.innerWidth * 0.1;
+              return itemWidth + gap;
+            }
 
-  function applyTransform() {
-    const wrapped = ((pos % step) + step) % step;
-    track.style.transform = `translate3d(${-wrapped}px, 0, 0)`; // GPU 合成更稳
-  }
+            function applyTransform() {
+              // 用模运算平滑回环；注意是负方向平移
+              const wrapped = ((pos % step) + step) % step;
+              track.style.transform = `translateX(${-wrapped}px)`;
+            }
 
-  function tick() {
-    pos += speed;
-    applyTransform();
-    rafId = requestAnimationFrame(tick);
-  }
+            function tick() {
+              pos += speed;
+              applyTransform();
+              rafId = requestAnimationFrame(tick);
+            }
 
-  function remeasure() {
-    const newStep = computeStep();
-    if (newStep <= 0) return;
-    if (Math.abs(newStep - step) < 0.5) return; // 忽略浮动
-    step = newStep;
-    pos = ((pos % step) + step) % step;
-    applyTransform();
-  }
+            // 重新测量（窗口变化/字体变化时）
+            function remeasure() {
+              const oldStep = step;
+              step = computeStep();
+              if (step <= 0) return;
 
-  // ✅ 改动点：等待 1-5-1 完成后再初始化
-  window.addEventListener('linebeat-ready', async () => {
-    // 初始透明度淡入
-    items.forEach(el => { el.style.opacity = '0'; el.style.transition = 'opacity 1s ease-out'; });
+              // 将当前位置按新步长重新包裹，避免跳变
+              pos = ((pos % step) + step) % step;
+              applyTransform();
+            }
 
-    await waitForFonts();
-    step = computeStep();
-    applyTransform();
+            // 初始化
+            (async function init() {
+              // 初始透明度淡入（保持你原来的效果）
+              items.forEach(el => { el.style.opacity = '0'; el.style.transition = 'opacity 1s ease-out'; });
 
-    // 1s 后开始动画
-    setTimeout(() => {
-      if (!prefersReduced) rafId = requestAnimationFrame(tick);
-      items.forEach(el => { el.style.opacity = '1'; });
-    }, 1000);
+              await waitForFonts();
+              step = computeStep();
+              applyTransform();
 
-    // 监听 resize（含 DPR 变化）
-    let resizeTimer = null;
-    window.addEventListener('resize', () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(remeasure, 50);
-    });
+              // 1s 后开始动画（沿用你的时序）
+              setTimeout(() => {
+                if (!prefersReduced) rafId = requestAnimationFrame(tick);
+                items.forEach(el => { el.style.opacity = '1'; });
+              }, 1000);
 
-    // 字体集合事件（部分浏览器支持）
-    if (document.fonts && typeof document.fonts.addEventListener === 'function') {
-      document.fonts.addEventListener('loadingdone', remeasure);
-      document.fonts.addEventListener('loadingerror', remeasure);
-    }
-  });
-})();
-</script>
+              // 监听 resize（含 DPR 变化）
+              let resizeTimer = null;
+              window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(remeasure, 50);
+              });
 
+              // 字体集合事件（部分浏览器支持）
+              if (document.fonts && typeof document.fonts.addEventListener === 'function') {
+                document.fonts.addEventListener('loadingdone', remeasure);
+                document.fonts.addEventListener('loadingerror', remeasure);
+              }
+            })();
+          })();
+        </script>
 
 
         <style>
@@ -428,70 +432,8 @@
         }
       })();
     </script>
-
-<script>
-/**
- * 行数律动（只压字形，不改盒模型），保证首帧宽度正确。
- * 做法：先改 DOM，再 dispatch 一个事件给滚动模块启动。
- */
-(function lineBeat() {
-  const MAX_LINES = 6;
-  const CYCLE_MS = 400;
-  const HOLD_MS  = 250;
-  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  const targets = Array.from(document.querySelectorAll('.bg-text, .bg-text-clone'));
-  if (!targets.length) return;
-
-  const entries = targets.map(el => {
-    const base = (el.getAttribute('data-text') || el.textContent || '').trim() || 'TERMINATED';
-    el.innerHTML = `<span class="bg-text-inner" aria-hidden="true"></span>`;
-    const inner = el.firstElementChild;
-    el.style.lineHeight = getComputedStyle(el).lineHeight;
-    return { inner, base };
-  });
-
-  function setLines(L) {
-    entries.forEach(({ inner, base }) => {
-      if (inner.__lastL !== L) {
-        inner.innerHTML = Array.from({ length: L }).map(() => base).join('<br>');
-        inner.__lastL = L;
-      }
-      inner.style.setProperty('--line-scale', (1 / L).toFixed(4));
-    });
-  }
-
-  function startBeat() {
-    if (prefersReduced) { setLines(1); return; }
-    let L = 1, dir = 1;
-    const stepMs = Math.floor(CYCLE_MS / (MAX_LINES - 1));
-    function tick() {
-      setLines(L);
-      if ((L === MAX_LINES && dir === 1) || (L === 1 && dir === -1)) {
-        setTimeout(() => { dir *= -1; L += dir; timer = setTimeout(tick, stepMs); }, HOLD_MS);
-        return;
-      }
-      L += dir;
-      timer = setTimeout(tick, stepMs);
-    }
-    let timer = setTimeout(tick, 1200);
-  }
-
-  // 初始化阶段
-  (async function init() {
-    if (document.fonts?.ready) { try { await document.fonts.ready; } catch (e) {} }
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-    setLines(1);
-    startBeat();
-
-    // ✳️ 关键：通知滚动模块“现在可以测宽度了”
-    window.dispatchEvent(new Event('linebeat-ready'));
-  })();
-})();
-</script>
-
   </section>
+
 
 
   <div class="page">
