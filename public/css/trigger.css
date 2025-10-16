@@ -220,3 +220,11 @@ button:hover {
   flex-direction: column;    /* 内容垂直排列 */
   z-index: 1;
 }
+
+/* 内层：由 JS 注入 <span class="bg-text-inner"> 包裹，负责垂直压缩 */
+.bg-text-inner {
+  display: inline-block;
+  transform-origin: center center;
+  transform: scaleY(var(--line-scale, 1));  /* JS 动态更新此变量 */
+  will-change: transform;
+}
