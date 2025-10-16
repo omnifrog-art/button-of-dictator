@@ -209,22 +209,20 @@ button:hover {
 }
 
 .page {
-  position: fixed;           /* 固定在视口，不随滚动 */
-  top: 0;
-  left: 0;
-  width: 100vw;              /* 视口宽 */
-  height: 100vh;             /* 视口高 */
-  display: flex;
-  align-items: center;       /* 垂直居中 */
-  justify-content: center;   /* 水平居中 */
-  flex-direction: column;    /* 内容垂直排列 */
-  z-index: 1;
-}
-
-/* 内层：由 JS 注入 <span class="bg-text-inner"> 包裹，负责垂直压缩 */
-.bg-text-inner {
-  display: inline-block;
-  transform-origin: center center;
-  transform: scaleY(var(--line-scale, 1));  /* JS 动态更新此变量 */
-  will-change: transform;
+    position: fixed;
+    /* 固定在视口，不随滚动 */
+    top: 0;
+    left: 0;
+    width: 100vw;
+    /* 视口宽 */
+    height: 100vh;
+    /* 视口高 */
+    display: flex;
+    align-items: center;
+    /* 垂直居中 */
+    justify-content: center;
+    /* 水平居中 */
+    flex-direction: column;
+    /* 内容垂直排列 */
+    z-index: 1;
 }
