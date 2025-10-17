@@ -330,8 +330,11 @@ button.small-btn:hover {
     padding: 0.55rem 0.9rem;
     font-size: 0.85rem;
   }
+}
+
+@media (max-width: 400px) {
   .card {
-    width: 80vw;
+    max-width: 80vw;
   }
 }
 
@@ -474,3 +477,4 @@ button.small-btn:hover {
 .term-body::-webkit-scrollbar-track {
   background: transparent;
 }
+
