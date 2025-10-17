@@ -330,6 +330,9 @@ button.small-btn:hover {
     padding: 0.55rem 0.9rem;
     font-size: 0.85rem;
   }
+  .card {
+    width: 80vw;
+  }
 }
 
 /* ===== 兜底方案：不支持 backdrop-filter 时 ===== */
