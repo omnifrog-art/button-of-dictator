@@ -466,7 +466,7 @@
 // === Supabase 实例，若 log.js 里已有可直接复用 ===
 const SUPABASE_URL = 'https://qvslxmokvbjhslbxdhtb.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2c2x4bW9rdmJqaHNsYnhkaHRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2ODM1MzYsImV4cCI6MjA2MTI1OTUzNn0.fJ9jTo9yrKWZQ-Hif2-YJo5jWF1RolIsIeZSVB5TPxA';
-const supabase = window.supabase || createClient(supabaseUrl, supabaseKey);
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // === 工具：取当前 subdomain ===
 function getSubdomain(host = location.hostname) {
