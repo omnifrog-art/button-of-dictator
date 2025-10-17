@@ -165,7 +165,9 @@
 h1 {
     font-size: 1.5rem;
     margin-bottom: 1rem;
-    color: #fff;
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: .08em;
 }
 
 form,
@@ -185,7 +187,7 @@ input {
   margin: 0 auto;                       /* ← 居中对齐 */
   padding: 0.55rem 0.8rem;
   font-size: 1rem;
-  color: #fff;
+  color: #000;
   border: 1px solid rgba(255,255,255,.08);
   border-radius: var(--radius);
   background: rgba(255,255,255,.06);
@@ -232,6 +234,11 @@ input:-webkit-autofill:active {
   transition: background-color 5000s ease-in-out 0s;  /* 防止重绘闪烁 */
 }
 
+::placeholder {
+  color: var(--muted);   /* #aaa */
+  opacity: 0.9;              /* 轻微半透，让质感柔和 */
+}
+
 #username {
   display: block;                /* 让 margin: auto 生效 */
   width: 100%;                   /* 填满父容器 */
@@ -253,7 +260,7 @@ button {
   z-index: 0;
   padding: 0.65rem 1rem;
   font-size: 0.95rem;
-  color: #fff;
+  color: #4d4d4d;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 9999px; /* 最大圆角（胶囊形） */
   cursor: pointer;
@@ -417,7 +424,7 @@ button.small-btn:hover {
 
 .term {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-  color: #eaeaea;
+  color: var(--accent);
   width: 100%; height: 100%;
   display: flex; flex-direction: column;
 }
@@ -426,7 +433,7 @@ button.small-btn:hover {
   font-size: 12px; letter-spacing: .02em;
   opacity: .85;
   padding-bottom: 4px; margin-bottom: 6px;
-  border-bottom: 1px dashed rgba(255,255,255,.15);
+  border-bottom: 1px dashed var(--accent);
 }
 .term-body {
   flex: 1; overflow: auto;
