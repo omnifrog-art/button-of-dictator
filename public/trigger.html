@@ -463,6 +463,32 @@
   </div>
 
   <script>
+    // ---- (A) 在最上面加：倒计时函数 + getApexURL 工具 ----
+    async function terminalCountdown({ seconds = 10, finalText = 'farewell', redirect = 'reload' }) {
+      const estimateTypeMs = (txt) => (txt?.length || 0) * 18 + 24;
+      const start = performance.now();
+      for (let s = seconds; s >= 1; s--) {
+        const msg = `T-${s}`;
+        const target = start + (seconds - s + 1) * 1000;
+        const budget = Math.max(0, target - performance.now() - estimateTypeMs(msg));
+        if (budget > 0) await new Promise(r => setTimeout(r, budget));
+        await (window.term?.println ? window.term.println(msg) : Promise.resolve());
+      }
+      await (window.term?.println ? window.term.println(finalText) : Promise.resolve());
+      if (typeof redirect === 'function') redirect();
+      else if (redirect === 'reload') location.reload();
+      else if (typeof redirect === 'string' && redirect) location.replace(redirect);
+    }
+
+    function getApexURL(path = '/detached') {
+      const { protocol, hostname } = location;
+      if (hostname === 'localhost' || /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname))
+        return `${protocol}//${hostname}${path}`;
+      const parts = hostname.split('.');
+      const apex = parts.slice(-2).join('.');
+      return `${protocol}//${apex}${path}`;
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       const usernameForm = document.getElementById('username-form');
       const usernameInput = document.getElementById('username');
@@ -575,10 +601,13 @@
           console.log('Subdomain removed:', removeData);
 
           // 文案：流程完成
-          await tprintln('Detached.');
-
-          alert('Termination complete. Subdomain removed.');
-          setTimeout(() => window.location.reload(), 5000);
+await tprintln('Detached.');
+alert('Termination complete. Subdomain removed.');
+await terminalCountdown({
+  seconds: 10,
+  finalText: 'farewell',
+  redirect: 'reload'
+});
 
         } catch (error) {
           console.error('Termination process failed:', error);
