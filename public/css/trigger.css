@@ -177,35 +177,162 @@ form,
     width: 250px;
 }
 
+/* 凹陷玻璃输入框：光从上方 → 上沿亮、下沿暗 */
 input {
-    padding: 0.5rem;
-    font-size: 1rem;
-    background: #1b1b1b;
-    border: 1px solid #444;
-    color: #fff;
-    border-radius: 4px;
+  display: block;                       /* ← 让 margin: auto 生效 */
+  width: 100%;                          /* ← 填满容器，与按钮齐宽 */
+  max-width: 250px;                     /* ← 与按钮宽度相同 */
+  margin: 0 auto;                       /* ← 居中对齐 */
+  padding: 0.55rem 0.8rem;
+  font-size: 1rem;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: var(--radius);
+  background: rgba(255,255,255,.06);
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  box-shadow:
+    inset 0 3px 7px rgba(0,0,0,.48),        /* ↓ 下沿暗（与按钮的 0 4 10 同向） */
+    inset 0 -3px 7px rgba(255,255,255,.13), /* ↑ 上沿亮 */
+    0 0 0 1px rgba(255,255,255,.05);        /* 外缘柔光 */
+  transition: box-shadow .25s ease, background .25s ease, border-color .25s ease;
+  outline: none;
 }
 
+input:hover {
+  background: rgba(255,255,255,.09);
+  box-shadow:
+    inset 0 2.5px 6px rgba(0,0,0,.44),
+    inset 0 -2.5px 6px rgba(255,255,255,.16),
+    0 0 0 1px rgba(255,255,255,.06);
+}
+
+input:focus {
+  border-color: rgba(255,255,255,.18);
+  background: rgba(255,255,255,.11);
+  box-shadow:
+    inset 0 2px 5px rgba(0,0,0,.40),
+    inset 0 -2px 5px rgba(255,255,255,.18),
+    0 0 0 1.5px rgba(255,255,255,.09),
+    0 0 6px rgba(255,255,255,.22);
+}
+
+/* 小屏适配：按钮和输入框宽度同步缩放 */
+@media (max-width: 400px) {
+  input {
+    max-width: 80vw;                    /* 与小屏按钮的 80vw 对齐 */
+  }
+}
+
+/* 统一覆盖自动填充的默认蓝色背景 */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  transition: background-color 5000s ease-in-out 0s;  /* 防止重绘闪烁 */
+}
+
+#username {
+  display: block;                /* 让 margin: auto 生效 */
+  width: 100%;                   /* 填满父容器 */
+  max-width: 250px;              /* 与按钮等宽 */
+  margin: 0 auto;                /* 水平居中 */
+  box-sizing: border-box;        /* 防止 padding 撑破宽度 */
+}
+
+@media (max-width: 400px) {
+  #username {
+    max-width: 80vw;             /* 窄屏时自动收缩 */
+  }
+}
+
+
+/* ========== 磨砂按钮（与卡片风格一致，最大圆角） ========== */
 button {
-    padding: 0.75rem;
-    font-size: 1rem;
-    background: #ff4f4f;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+  position: relative;
+  z-index: 0;
+  padding: 0.65rem 1rem;
+  font-size: 0.95rem;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9999px; /* 最大圆角（胶囊形） */
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.25),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  transition: background 0.25s ease,
+              box-shadow 0.25s ease,
+              transform 0.15s ease;
 }
 
+/* 按钮边缘模糊层（与卡片::before一致） */
+button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  pointer-events: none;
+  z-index: -1;
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+
+  /* 径向遮罩，让模糊集中在边缘 */
+  -webkit-mask: radial-gradient(110% 110% at 50% 50%,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 0) 70%,
+      #000 100%);
+          mask: radial-gradient(110% 110% at 50% 50%,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 0) 70%,
+      #000 100%);
+}
+
+/* hover：轻微提亮 + 上浮 */
 button:hover {
-    background: #ff1f1f;
+  background: rgba(255, 255, 255, 0.14);
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.3),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
-.small-btn {
-    background: #5c5c5c;
+/* ===== 主按钮（红色主动作，例如 Terminate） ===== */
+button.terminate-btn {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+button.terminate-btn:hover {
+  background: rgba(200, 50, 100, .3);
+  box-shadow: 0 3px 8px rgba(200, 50, 100, 0.25);
 }
 
-.small-btn:hover {
-    background: #777;
+/* ===== 次级按钮（灰色辅助，如 Submit Name） ===== */
+button.small-btn {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+button.small-btn:hover {
+  background: rgba(50, 100, 200, .3);
+  box-shadow: 0 3px 8px rgba(50, 100, 200, 0.3);
+}
+
+/* ===== 移动端优化 ===== */
+@media (max-width: 400px) {
+  button {
+    padding: 0.55rem 0.9rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* ===== 兜底方案：不支持 backdrop-filter 时 ===== */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  button {
+    background: rgba(70, 70, 70, 0.85);
+  }
+  button::before {
+    display: none;
+  }
 }
 
 .page {
@@ -277,12 +404,6 @@ button:hover {
         inset 0 0 0 1px rgba(255, 255, 255, .05);
 }
 
-@media (max-width: 400px) {
-  .card {
-    width: 80vw;              /* 占视口宽度 80% */
-  }
-}
-
 /* 兜底方案：浏览器不支持 backdrop-filter 时 */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .card {
@@ -343,5 +464,3 @@ button:hover {
 .term-body::-webkit-scrollbar-track {
   background: transparent;
 }
-
-
