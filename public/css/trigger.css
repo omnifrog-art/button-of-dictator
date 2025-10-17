@@ -277,6 +277,11 @@ button:hover {
         inset 0 0 0 1px rgba(255, 255, 255, .05);
 }
 
+@media (max-width: 400px) {
+  .card {
+    width: 80vw;              /* 占视口宽度 80% */
+  }
+
 /* 兜底方案：浏览器不支持 backdrop-filter 时 */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .card {
@@ -337,3 +342,4 @@ button:hover {
 .term-body::-webkit-scrollbar-track {
   background: transparent;
 }
+
