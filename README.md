@@ -104,10 +104,12 @@ A system that executes without negotiation.
 
 ## ➤ TODO
 
-- Implement 50 valid subdomains (limit reached)  
-- Build `/log.html` with finalised styling  
-- Finalise 404-redirection as symbolic obit  
-- Consider poster/flyer/QR-code physical deployment  
+- Implement 50 valid subdomains (limit reached) - COMPLETE
+- Build `/log.html` with finalised styling - COMPLETE  
+- Finalise 404-redirection as symbolic obit - COMPLETE
+- Consider poster/flyer/QR-code physical deployment - TBD
+- Minor interface consistency adjustments - TBD
+- Implementation of 00000 & 00SAM subdomain - TBD
 
 ---
 
