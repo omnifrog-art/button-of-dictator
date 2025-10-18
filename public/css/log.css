@@ -296,7 +296,7 @@ h1 {
 }
 
 .domain {
-    display: inline;
+    width: 100%;
     font-size: 12px; letter-spacing: .02em;
     font-weight: 700;
     color: var(--accent);
@@ -320,12 +320,13 @@ h1 {
 
 .label {
     color: var(--muted);
+    font-size: 14px; letter-spacing: .02em;
     font-size: .8rem;
 }
 
 .value {
-    color: #6d6d6d;
-    font-size: .9rem;
+    color: var(--accent);
+    font-size: 12px; letter-spacing: .02em;
     min-width: 0;
     word-break: break-word;
 }
