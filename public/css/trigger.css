@@ -366,7 +366,7 @@ button.small-btn:hover {
 
 @media (max-width: 400px) {
     .card {
-        max-width: 80vw;
+        max-width: 100%;
     }
 }
 
@@ -574,3 +574,4 @@ h1 {
     color: var(--muted);
     font-size: .85rem;
 }
+
