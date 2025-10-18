@@ -274,6 +274,7 @@ input:-webkit-autofill:active {
 
 /* ========== 磨砂按钮（与卡片风格一致，最大圆角） ========== */
 button {
+    font-family: IBM Plex Sans, sans-serif;
     position: relative;
     z-index: 0;
     padding: 0.65rem 1rem;
@@ -551,6 +552,7 @@ button.small-btn:hover {
 }
 
 header {
+    font-family: IBM Plex Sans, sans-serif;
     display: flex;
     align-self: flex-start;
     align-items: baseline;
@@ -571,4 +573,5 @@ h1 {
     color: var(--muted);
     font-size: .85rem;
 }
+
 
