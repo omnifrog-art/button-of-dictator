@@ -297,13 +297,16 @@ h1 {
 
 .domain {
     display: inline;
-    font-size: 1.05rem;
+    font-size: 12px; letter-spacing: .02em;
     font-weight: 700;
     color: var(--accent);
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+    border-bottom: 1px dashed var(--accent);
 }
 
 .suffix {
-    font-size: .9rem;
+    font-size: 10px; letter-spacing: .02em;
     color: #4d4d4d;
     font-weight: 500;
 }
