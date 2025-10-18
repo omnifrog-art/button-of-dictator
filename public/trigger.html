@@ -438,16 +438,13 @@
 
 
   <div class="page">
-
-    <h1>Button of Dictator</h1>
-
     <form id="username-form">
       <input type="text" id="username" placeholder="Enter your name" required>
       <button type="submit" class="small-btn">Submit Name</button>
     </form>
 
     <div class="actions">
-      <button id="terminate-btn">Terminate</button>
+      <button id="terminate-btn">TERMINATE</button>
     </div>
 
     <div class="card">
@@ -468,7 +465,7 @@
       const estimateTypeMs = (txt) => (txt?.length || 0) * 18 + 24;
       const start = performance.now();
       for (let s = seconds; s >= 1; s--) {
-        const msg = `T-${s}`;
+        const msg = `${s}s`;
         const target = start + (seconds - s + 1) * 1000;
         const budget = Math.max(0, target - performance.now() - estimateTypeMs(msg));
         if (budget > 0) await new Promise(r => setTimeout(r, budget));
@@ -601,13 +598,13 @@
           console.log('Subdomain removed:', removeData);
 
           // 文案：流程完成
-await tprintln('Detached.');
-alert('Termination complete. Subdomain removed.');
-await terminalCountdown({
-  seconds: 10,
-  finalText: 'farewell',
-  redirect: 'reload'
-});
+          await tprintln('Detached.');
+          alert('Termination complete. Subdomain removed.');
+          await terminalCountdown({
+            seconds: 10,
+            finalText: 'farewell',
+            redirect: 'reload'
+          });
 
         } catch (error) {
           console.error('Termination process failed:', error);
@@ -686,7 +683,7 @@ await terminalCountdown({
         if (!el) return;
         const now = new Date();
         const { offset } = getTimeZoneInfo(now);
-        el.textContent = `${formatClock(now)}   ${offset}`;
+        el.innerHTML = `${formatClock(now)} <span class="term-muted">${offset}</span>`;
       }
       updateClock();
       setInterval(updateClock, 50);
@@ -703,7 +700,11 @@ await terminalCountdown({
           // 取整，避免抖动；也可用 Math.round(lastX)
           const x = Math.max(0, lastX | 0);
           const y = Math.max(0, lastY | 0);
-          posEl.textContent = `x: ${x}  y: ${y}`;
+          posEl.innerHTML = `
+  x: <span class="term-acc">${x}</span>
+  y: <span class="term-acc">${y}</span>
+`;
+
         }
         ticking = false;
       }
