@@ -327,7 +327,6 @@ button:hover {
 
 /* ===== 主按钮（红色主动作，例如 Terminate） ===== */
 #terminate-btn {
-    background: rgba(255, 225, 225, .1);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
     width: 250px;
     height: 250px;
@@ -337,9 +336,9 @@ button:hover {
 }
 
 #terminate-btn:hover {
-    background: rgba(255, 0, 0, .8);
-    box-shadow: 0 3px 8px rgba(255, 0, 0, 0.6);
-    color:#000;
+    background: rgba(255, 0, 0, .7);
+    box-shadow: 0 3px 8px rgba(255, 0, 0, 0.5);
+    color:#fff;
 }
 
 /* ===== 次级按钮（灰色辅助，如 Submit Name） ===== */
@@ -383,14 +382,9 @@ button.small-btn:hover {
 }
 
 .page {
-    position: fixed;
+    position: relative;
     /* 固定在视口，不随滚动 */
-    top: 0;
-    left: 0;
-    width: 100vw;
-    /* 视口宽 */
-    height: 100vh;
-    /* 视口高 */
+    padding: 2rem;
     display: flex;
     align-items: center;
     /* 垂直居中 */
@@ -557,4 +551,26 @@ button.small-btn:hover {
     color: var(--accent);
     font-size: 12px;
     letter-spacing: .02em;
+}
+
+header {
+    display: flex;
+    align-self: flex-start;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+}
+
+h1 {
+    font-size: clamp(1.25rem, 2.5vw, 1.6rem);
+    margin: 0;
+    color: #000;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}
+
+.hint {
+    color: var(--muted);
+    font-size: .85rem;
 }
