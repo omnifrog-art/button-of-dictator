@@ -358,10 +358,6 @@ button.small-btn:hover {
         padding: 0.55rem 0.9rem;
         font-size: 0.85rem;
     }
-
-    .card {
-        width: 80vw;
-    }
 }
 
 @media (max-width: 400px) {
@@ -574,4 +570,5 @@ h1 {
     color: var(--muted);
     font-size: .85rem;
 }
+
 
