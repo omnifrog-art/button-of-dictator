@@ -365,6 +365,12 @@ button.small-btn:hover {
     }
 }
 
+@media (max-width: 400px) {
+    .card {
+        max-width: 80vw;
+    }
+}
+
 /* ===== 兜底方案：不支持 backdrop-filter 时 ===== */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     button {
