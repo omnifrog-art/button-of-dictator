@@ -365,6 +365,7 @@ h1 {
     font-size: .78rem;
     color: var(--muted);
     text-align: center;
+    font-family: IBM Plex Sans, sans-serif;
 }
 
 /* ========== Motion preferences ========== */
