@@ -11,16 +11,15 @@ async function loadLogs() {
   const loading = document.getElementById('loading');
 
   try {
-    // 从 Supabase 获取所有日志
+    // 取全量记录（去掉服务端排序）
     const { data, error } = await db.from('logs').select('*');
     console.log('Fetched data:', data);
 
     if (error) throw error;
 
-    // 隐藏 Loading
     loading.style.display = 'none';
 
-    // 过滤掉 pending 状态
+    // 只显示 accessed / terminated
     const rows = (data || []).filter(log => log.status !== 'pending');
 
     if (rows.length === 0) {
@@ -29,44 +28,42 @@ async function loadLogs() {
       return;
     }
 
-    // ---- 排序逻辑 --------------------------------------------------
-    // 1️⃣ 计算时间戳（terminationTime 或 accessTime）
-    const ts = (log) => {
-      const s = log.terminationTime || log.accessTime || 0;
-      const n = Date.parse(s);
-      return Number.isNaN(n) ? 0 : n;
+    // 排序规则：
+    // 1) 有时间戳(terminationTime 或 accessTime) → 按时间新→旧
+    // 2) accessed 且没有时间戳 → 放最后
+    const getTs = (log) => {
+      const s = log.terminationTime || log.accessTime || null;
+      const n = s ? new Date(s).getTime() : NaN;
+      return Number.isFinite(n) ? n : NaN;
     };
+    const hasTs = (log) => Number.isFinite(getTs(log));
 
-    // 2️⃣ 排序规则：
-    //    - 有时间戳的记录（terminated 或 accessed）→ 按时间降序排列
-    //    - accessed 且没有时间戳的记录 → 放最后
     rows.sort((a, b) => {
-      const aHasTime = !!(a.terminationTime || a.accessTime);
-      const bHasTime = !!(b.terminationTime || b.accessTime);
+      const aHas = hasTs(a);
+      const bHas = hasTs(b);
 
-      // 无时间戳的 accessed 放最后
-      if (!aHasTime && a.status === 'accessed' && (bHasTime || b.status !== 'accessed')) return 1;
-      if (!bHasTime && b.status === 'accessed' && (aHasTime || a.status !== 'accessed')) return -1;
+      // 只有“accessed 无时间戳”要放到最后
+      const aIsNoTimeAccessed = !aHas && a.status === 'accessed';
+      const bIsNoTimeAccessed = !bHas && b.status === 'accessed';
+      if (aIsNoTimeAccessed !== bIsNoTimeAccessed) {
+        return aIsNoTimeAccessed ? 1 : -1; // a 落后 / a 靠前
+      }
 
-      // 其余情况：按时间新→旧
-      return ts(b) - ts(a);
+      // 其他情况：按时间戳降序（新→旧）
+      const ta = getTs(a);
+      const tb = getTs(b);
+      return (Number.isFinite(tb) ? tb : 0) - (Number.isFinite(ta) ? ta : 0);
     });
-    // ----------------------------------------------------------------
 
-    // 清空旧内容再渲染
-    grid.innerHTML = '';
-
-    // 渲染每条记录
+    // 按排好序的 rows 渲染
     rows.forEach(log => {
       const card = document.createElement('div');
       card.className = 'card';
-      card.dataset.subdomain = log.subdomain || '';
 
       const statusClass = log.status === 'terminated' ? 'executed' : 'accessed';
 
       card.innerHTML = `
         <div class="domain">${log.subdomain}<span class="suffix">.buttonofdictator.xyz</span></div>
-
         <div class="label">Assigned to:</div>
         <div class="value">${log.assignedTo || '-'}</div>
 
@@ -77,18 +74,14 @@ async function loadLogs() {
         <div class="value">${log.terminatedBy || '-'}</div>
 
         <div class="label">Time of termination:</div>
-        <div class="value">${
-          log.terminationTime ? new Date(log.terminationTime).toLocaleString() : '-'
-        }</div>
+        <div class="value">${log.terminationTime ? new Date(log.terminationTime).toLocaleString() : '-'}</div>
       `;
 
       grid.appendChild(card);
     });
-
   } catch (err) {
     console.error('Failed to load logs:', err);
     loading.innerText = 'Failed to load logs.';
-    loading.style.display = 'block';
   }
 }
 
