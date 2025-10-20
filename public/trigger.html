@@ -804,7 +804,7 @@
   }
 
   // 计算目标：让 .footer 的“顶边”落在视口底部之下 offsetRem（默认 1rem）
-  function computeFooterHideBy(offsetRem = 1) {
+  function computeFooterHideBy(offsetRem = 1.75) {
     const footer = document.querySelector('.footer');
     if (!footer) return null; // 没有 footer 就不滚
 
