@@ -769,7 +769,7 @@
   const root = document.documentElement;
   const scroller = document.scrollingElement || root;
 
-  // 关闭原生 smooth，避免与自定义 rAF 打架
+  // 关闭原生 CSS smooth，避免与 API smooth 打架
   const prevScrollBehavior = root.style.scrollBehavior;
   root.style.scrollBehavior = 'auto';
 
@@ -797,16 +797,16 @@
     });
   }
 
-  // 动画期间临时关闭重型效果（毛玻璃/大阴影等），结束后恢复
+  // 动画期间临时关闭重型效果（可选：若你仍想保留，解开调用处注释）
   function reduceEffects(on){
     if (on) root.classList.add('scroll-animating');
     else root.classList.remove('scroll-animating');
   }
 
-  // 计算目标：让 .footer 的“顶边”落在视口底部之下 offsetRem（默认 1rem）
-  function computeFooterHideBy(offsetRem = 1) {
+  // 计算目标：让 .footer 的“顶边”落在视口底部之下 offsetRem（默认 0.25rem）
+  function computeFooterHideBy(offsetRem = 0.25) {
     const footer = document.querySelector('.footer');
-    if (!footer) return null; // 没有 footer 就不滚
+    if (!footer) return null;
 
     const rem = parseFloat(getComputedStyle(root).fontSize) || 16;
     const offsetPx = offsetRem * rem;
@@ -815,17 +815,26 @@
 
     const rect = footer.getBoundingClientRect();
     const currentScroll = scroller.scrollTop;
-    const footerTopAbs = currentScroll + rect.top;  // ← 用顶边
+    const footerTopAbs = currentScroll + rect.top;  // 顶边
 
-    // 让 footer 顶边位于视口底部 + offsetPx（即刚好不可见，还差 offset 才露出）
-    const target = footerTopAbs - (vh + offsetPx);  // ← 顶边公式
+    // 让 footer 顶边位于 视口底部 + offsetPx（略藏在下方）
+    const target = footerTopAbs - (vh + offsetPx);
     return clamp(Math.round(target), 0, maxY);
   }
 
-  // 自定义 1s ease-out 滚动，仅滚到 targetY（绝不到底）
+  // —— 使用原生平滑滚动；不支持时再回退到 rAF —— 
   function scrollToYEaseOut(targetY, duration = 1000) {
     if (targetY == null || !isFinite(targetY)) return;
 
+    // 首选：原生 smooth（由合成器处理，流畅且不易掉帧）
+    try {
+      window.scrollTo({ top: Math.round(targetY), left: 0, behavior: 'smooth' });
+      return;
+    } catch (e) {
+      // 老环境回退到 rAF
+    }
+
+    // 兜底：rAF（可选开启降级特效以减卡顿）
     const start = scroller.scrollTop;
     const dist = targetY - start;
     if (Math.abs(dist) < 1) return;
@@ -834,14 +843,14 @@
     const easeOut = t => 1 - Math.pow(1 - t, 3);
     let lastY = start;
 
-    reduceEffects(true);
+    // reduceEffects(true); // ← 若需要，解开以降低毛玻璃/阴影开销
     function step(ts){
-      if (cancel) { reduceEffects(false); return; }
-      const p = Math.min(1, (ts - t0) / duration);
+      if (cancel) { /* reduceEffects(false); */ return; }
+      const p = Math.min(1, (ts - t0) / Math.max(150, duration));
       const y = start + dist * easeOut(p);
       if (Math.abs(y - lastY) > 0.5) { scroller.scrollTop = y; lastY = y; }
       if (p < 1) requestAnimationFrame(step);
-      else reduceEffects(false);
+      else { /* reduceEffects(false); */ }
     }
     requestAnimationFrame(step);
   }
@@ -856,7 +865,7 @@
     await waitStable();
     if (cancel) return;
 
-    const targetY = computeFooterHideBy(0.25); // 0.25rem
+    const targetY = computeFooterHideBy(0.25); // 让 footer 顶边落在视口底下 0.25rem
     if (targetY !== null) scrollToYEaseOut(targetY, 1000);
   }
 
@@ -876,7 +885,6 @@
   window.addEventListener('pagehide', () => { root.style.scrollBehavior = prevScrollBehavior; });
 })();
 </script>
-
 </body>
 
 </html>
