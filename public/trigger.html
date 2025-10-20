@@ -757,7 +757,7 @@
 
 <script>
 (function () {
-  // —— 条件：移动端；尊重减少动态；无锚点；用户未先滚动 ——
+  // —— 仅在移动端、未滚动、无锚点、且尊重减少动态时退出 ——
   const ua = navigator.userAgent;
   const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
   const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -773,32 +773,59 @@
   const prevScrollBehavior = root.style.scrollBehavior;
   root.style.scrollBehavior = 'auto';
 
-  // 用户一有交互就取消
+  // 任意用户交互即取消自动滚
   ['touchstart','wheel','keydown','mousedown'].forEach(evt => {
     window.addEventListener(evt, () => { cancel = true; }, { passive:true, once:true });
   });
 
-  // 视口高度（优先 visualViewport）
+  // —— 工具函数 ——
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const getVH = () => window.visualViewport ? Math.round(window.visualViewport.height) : window.innerHeight;
   const canScroll = () => (scroller.scrollHeight - getVH()) > 8;
-  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-  // 等布局稳定（字体就绪 + 连续两帧一致）
+  // 等布局稳定（字体就绪 + 连续两帧 scrollHeight / VH 一致）
   async function waitStable() {
     if (document.fonts?.ready) { try { await document.fonts.ready; } catch(e){} }
     await new Promise(resolve => {
       let lastH=-1, lastV=-1, stable=0;
-      const tick=()=>{
-        const h=scroller.scrollHeight, v=getVH();
-        if (h===lastH && v===lastV) stable++; else { stable=0; lastH=h; lastV=v; }
-        if (stable>=2) resolve(); else requestAnimationFrame(tick);
+      const tick = () => {
+        const h = scroller.scrollHeight, v = getVH();
+        if (h === lastH && v === lastV) stable++; else { stable=0; lastH=h; lastV=v; }
+        if (stable >= 2) resolve(); else requestAnimationFrame(tick);
       };
       requestAnimationFrame(tick);
     });
   }
 
-  // 自定义 1s ease-out 滚动
-  function scrollToYEaseOut(targetY, duration=1000) {
+  // 动画期间临时关闭重型效果（毛玻璃/大阴影等），结束后恢复
+  function reduceEffects(on){
+    if (on) root.classList.add('scroll-animating');
+    else root.classList.remove('scroll-animating');
+  }
+
+  // 计算目标：让 .footer 的“底边”落在视口底部之下 offsetRem（默认 1rem）
+  function computeFooterHideBy(offsetRem = 1) {
+    const footer = document.querySelector('.footer');
+    if (!footer) return null; // 没有 footer 就不滚
+
+    const rem = parseFloat(getComputedStyle(root).fontSize) || 16;
+    const offsetPx = offsetRem * rem;
+    const vh = getVH();
+    const maxY = Math.max(0, scroller.scrollHeight - vh);
+
+    const rect = footer.getBoundingClientRect();
+    const currentScroll = scroller.scrollTop;
+    const footerBottomAbs = currentScroll + rect.bottom;
+
+    // 让 footer 底边位于视口底部 + offsetPx（即刚好不可见，还差 offset 才露出）
+    const target = footerBottomAbs - (vh + offsetPx);
+    return clamp(Math.round(target), 0, maxY);
+  }
+
+  // 自定义 1s ease-out 滚动，仅滚到 targetY（绝不到底）
+  function scrollToYEaseOut(targetY, duration = 1000) {
+    if (targetY == null || !isFinite(targetY)) return;
+
     const start = scroller.scrollTop;
     const dist = targetY - start;
     if (Math.abs(dist) < 1) return;
@@ -807,48 +834,33 @@
     const easeOut = t => 1 - Math.pow(1 - t, 3);
     let lastY = start;
 
+    reduceEffects(true);
     function step(ts){
-      if (cancel) return;
+      if (cancel) { reduceEffects(false); return; }
       const p = Math.min(1, (ts - t0) / duration);
-      const y = clamp(start + dist * easeOut(p), 0, targetY > start ? targetY : start);
+      const y = start + dist * easeOut(p);
       if (Math.abs(y - lastY) > 0.5) { scroller.scrollTop = y; lastY = y; }
       if (p < 1) requestAnimationFrame(step);
+      else reduceEffects(false);
     }
     requestAnimationFrame(step);
   }
 
-  // 计算 footer 顶部 - 0.75rem 的目标位置
-  function computeFooterTargetY() {
-    const footer = document.querySelector('#page-footer, footer, .footer');
-    const rem = parseFloat(getComputedStyle(root).fontSize) || 16;
-    const offset = 0.75 * rem; // 0.75rem
-    const vh = getVH();
-    const maxY = Math.max(0, scroller.scrollHeight - vh);
-
-    if (!footer) return maxY; // 没有 footer 就到底
-
-    const rect = footer.getBoundingClientRect();
-    const currentScroll = scroller.scrollTop;
-    const footerTopAbs = currentScroll + rect.top;
-
-    // 让“footer 顶部”进入视口后再多滚 0.75rem
-    return clamp(Math.round(footerTopAbs - offset), 0, maxY);
-  }
-
+  // 主流程：等页面稳定 → 计算 .footer 目标 → 一次性滚动
   async function run(){
     if (autoScrolled || cancel || !canScroll()) return;
     autoScrolled = true;
 
-    // 给页面一点喘息：load+rAF+250ms+额外1.5s
+    // 给页面一点喘息（load→rAF→250ms→额外1.5s）
     await new Promise(r => setTimeout(r, 1750));
     await waitStable();
-
     if (cancel) return;
 
-    const targetY = computeFooterTargetY();
-    scrollToYEaseOut(targetY, 1000);
+    const targetY = computeFooterHideBy(1); // 1rem
+    if (targetY !== null) scrollToYEaseOut(targetY, 1000);
   }
 
+  // 首次触发
   window.addEventListener('load', () => {
     requestAnimationFrame(() => setTimeout(run, 250));
   });
@@ -864,6 +876,7 @@
   window.addEventListener('pagehide', () => { root.style.scrollBehavior = prevScrollBehavior; });
 })();
 </script>
+
 </body>
 
 </html>
