@@ -816,7 +816,7 @@
     const doc = document.scrollingElement || document.documentElement;
     const maxY = Math.max(0, doc.scrollHeight - window.innerHeight);
 
-    const el = document.getElementById('terminateBtn'); // 给按钮加这个 id
+    const el = document.getElementById('terminate-Btn'); // 给按钮加这个 id
     let targetY = maxY; // 默认到底
 
     if (el) {
@@ -843,10 +843,12 @@
   // —— 等“整页完全加载且排版稳定”再执行 ——
   // load 触发后再用 rAF + setTimeout 双保险，给字体/图片一个喘息
   window.addEventListener('load', () => {
-    requestAnimationFrame(() => setTimeout(() => {
-      // 再给一次 rAF，确保 reflow 后测量
+  requestAnimationFrame(() => setTimeout(() => {
+    // 再额外延迟 1.5 秒再执行
+    setTimeout(() => {
       requestAnimationFrame(measureAndScroll);
-    }, 250));
+    }, 1500);
+  }, 250));
   });
 
   // 视口变化（横竖屏/地址栏高度变化）再尝试一次，但仍只滚“一次”
