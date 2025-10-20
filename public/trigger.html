@@ -861,7 +861,7 @@
     autoScrolled = true;
 
     // 给页面一点喘息（load→rAF→250ms→额外1.5s）
-    await new Promise(r => setTimeout(r, 1750));
+    await new Promise(r => setTimeout(r, 1000));
     await waitStable();
     if (cancel) return;
 
