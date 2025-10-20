@@ -2,32 +2,17 @@
   "rewrites": [
     {
       "source": "/",
-      "has": [
-        {
-          "type": "host",
-          "value": "log.buttonofdictator.xyz"
-        }
-      ],
+      "has": [{ "type": "host", "value": "log.buttonofdictator.xyz" }],
       "destination": "/log.html"
     },
     {
       "source": "/",
-      "has": [
-        {
-          "type": "host",
-          "value": "00000.buttonofdictator.xyz"
-        }
-      ],
+      "has": [{ "type": "host", "value": "00000.buttonofdictator.xyz" }],
       "destination": "/00000.html"
     },
     {
       "source": "/",
-      "has": [
-        {
-          "type": "host",
-          "value": "00sam.buttonofdictator.xyz"
-        }
-      ],
+      "has": [{ "type": "host", "value": "00sam.buttonofdictator.xyz" }],
       "destination": "/00sam.html"
     },
     {
@@ -37,21 +22,9 @@
   ],
   "headers": [
     {
-      "source": "/",
+      "source": "/(.*)",
       "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store"
-        }
-      ]
-    },
-    {
-      "source": "/:path*",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store"
-        }
+        { "key": "Cache-Control", "value": "no-store" }
       ]
     }
   ]
