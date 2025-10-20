@@ -755,76 +755,108 @@
     })();
   </script>
 
-  <script>
-    (function () {
-      // —— 条件：移动端；尊重减少动效；有滚动；只滚一次 ——
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+<script>
+(function () {
+  // —— 条件：移动端；尊重减少动态；无锚点；用户未先滚动 ——
+  const ua = navigator.userAgent;
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      if (!isMobile) return;
-      if (prefersReducedMotion) return;
-      if (location.hash) return;
-      if (window.scrollY > 0) return;
+  if (!isMobile) return;
+  if (prefersReducedMotion) return;
+  if (location.hash) return;
+  if (window.scrollY > 0) return;
 
-      let autoScrolled = false;
-      let cancel = false;
+  let autoScrolled = false;
+  let cancel = false;
 
-      // 用户一触发交互就取消自动滚
-      ['touchstart', 'wheel', 'keydown'].forEach(evt => {
-        window.addEventListener(evt, () => { cancel = true; }, { passive: true, once: true });
-      });
+  // 用户一有交互就取消自动滚
+  ['touchstart','wheel','keydown','mousedown'].forEach(evt => {
+    window.addEventListener(evt, () => { cancel = true; }, { passive:true, once:true });
+  });
 
-      function canScroll() {
-        const doc = document.scrollingElement || document.documentElement;
-        return (doc.scrollHeight - window.innerHeight) > 8;
+  function canScroll() {
+    const doc = document.scrollingElement || document.documentElement;
+    return (doc.scrollHeight - window.innerHeight) > 8;
+    }
+
+  // rAF 自定义 1s ease-out 滚动
+  function scrollToYEaseOut(targetY, duration = 1000) {
+    const doc = document.scrollingElement || document.documentElement;
+    const start = doc.scrollTop;
+    const dist = targetY - start;
+    if (Math.abs(dist) < 1) return;
+
+    const t0 = performance.now();
+    const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+
+    function step(ts) {
+      if (cancel) return;
+      const p = Math.min(1, (ts - t0) / duration);
+      const y = start + dist * easeOutCubic(p);
+      window.scrollTo(0, y);
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function clamp(val, min, max) {
+    return Math.max(min, Math.min(max, val));
+  }
+
+  function measureAndScroll() {
+    if (autoScrolled || cancel || !canScroll()) return;
+    autoScrolled = true;
+
+    // iOS Safari 先轻推触发地址栏折叠，再测量更准确
+    if (isSafari) window.scrollTo(0, 1);
+
+    // —— 目标：让 #terminateBtn 居中；若无法居中则滚到底 ——
+    const doc = document.scrollingElement || document.documentElement;
+    const maxY = Math.max(0, doc.scrollHeight - window.innerHeight);
+
+    const el = document.getElementById('terminateBtn'); // 给按钮加这个 id
+    let targetY = maxY; // 默认到底
+
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      const elCenterFromViewportTop = rect.top + rect.height / 2;
+      const currentScroll = window.pageYOffset || doc.scrollTop || 0;
+
+      // 让按钮中心对齐视口中心
+      const desired = currentScroll + elCenterFromViewportTop - (window.innerHeight / 2);
+
+      // 目标滚动位置需落在 [0, maxY] 之间
+      targetY = clamp(Math.round(desired), 0, maxY);
+
+      // 如果距离底部不足半屏，实际观感会更像“到底”，直接到底更稳
+      const nearBottomThreshold = window.innerHeight * 0.5;
+      if (maxY - targetY < nearBottomThreshold) {
+        targetY = maxY;
       }
+    }
 
-      // 1s ease-out 页面级滚动到底
-      function scrollToBottomEaseOut(duration = 1000) {
-        const doc = document.scrollingElement || document.documentElement;
-        const start = doc.scrollTop;
-        const end = Math.max(0, doc.scrollHeight - window.innerHeight);
-        const dist = end - start;
-        if (dist <= 0) return;
+    scrollToYEaseOut(targetY, 1000); // 1s ease-out
+  }
 
-        const t0 = performance.now();
-        const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+  // —— 等“整页完全加载且排版稳定”再执行 ——
+  // load 触发后再用 rAF + setTimeout 双保险，给字体/图片一个喘息
+  window.addEventListener('load', () => {
+    requestAnimationFrame(() => setTimeout(() => {
+      // 再给一次 rAF，确保 reflow 后测量
+      requestAnimationFrame(measureAndScroll);
+    }, 250));
+  });
 
-        function step(t) {
-          if (cancel) return;
-          const p = Math.min(1, (t - t0) / duration);
-          const y = start + dist * easeOutCubic(p);
-          window.scrollTo(0, y);
-          if (p < 1) requestAnimationFrame(step);
-        }
-        requestAnimationFrame(step);
-      }
-
-      function collapseBarAndScrollOnce() {
-        if (autoScrolled || cancel || !canScroll()) return;
-        autoScrolled = true;
-
-        // 轻推 1px 触发 iOS Safari 地址栏折叠（仅移动端 Safari）
-        if (isSafari) window.scrollTo(0, 1);
-
-        // 只滚“页面”到底（终端不做内部滚动）
-        scrollToBottomEaseOut(1000);
-      }
-
-      // 等首屏稳定后执行
-      window.addEventListener('load', () => {
-        requestAnimationFrame(() => setTimeout(collapseBarAndScrollOnce, 250));
-      });
-
-      // 视口变化（横竖屏/地址栏高度变化）再尝试一次，但仍只滚“一次”
-      ['orientationchange', 'resize', 'visibilitychange'].forEach(evt => {
-        window.addEventListener(evt, () => {
-          requestAnimationFrame(() => setTimeout(collapseBarAndScrollOnce, 150));
-        }, { passive: true });
-      });
-    })();
-  </script>
+  // 视口变化（横竖屏/地址栏高度变化）再尝试一次，但仍只滚“一次”
+  ['orientationchange','resize','visibilitychange'].forEach(evt => {
+    window.addEventListener(evt, () => {
+      requestAnimationFrame(() => setTimeout(measureAndScroll, 150));
+    }, { passive:true });
+  });
+})();
+</script>
 </body>
 
 </html>
