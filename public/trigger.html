@@ -823,7 +823,7 @@
   }
 
   // —— 使用原生平滑滚动；不支持时再回退到 rAF —— 
-  function scrollToYEaseOut(targetY, duration = 1000) {
+  function scrollToYEaseOut(targetY, duration = 500) {
     if (targetY == null || !isFinite(targetY)) return;
 
     // 首选：原生 smooth（由合成器处理，流畅且不易掉帧）
