@@ -13,11 +13,11 @@
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@100;200;300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=Saira:wght@100;200;300;400;500;600;700;800;900&display=swap" />
 
-<link rel="icon" href="/images/favicon-terminate-flat.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="/images/terminate-flat-32.png">
-<link rel="icon" type="image/png" sizes="64x64" href="/images/terminate-flat-64.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/images/terminate-flat-180.png">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="icon" href="/images/favicon-terminate-flat.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/terminate-flat-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/images/terminate-flat-64.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/terminate-flat-180.png">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
@@ -438,13 +438,13 @@
   </section>
 
   <div class="page">
-      <header>
+    <header>
       <h1>Button of Dictator</h1>
       <p class="hint">Behaviour creates consequence.</p>
       <div class="toolbar">
         <button class="btn" id="resetBtn" style="display:none">Reset logs</button>
       </div>
-  </header>
+    </header>
     <form id="username-form">
       <input type="text" id="username" placeholder="Enter your name" required>
       <button type="submit" class="small-btn">Submit Name</button>
@@ -463,16 +463,14 @@
         <div class="term-body" id="term-body" aria-live="polite"></div>
       </div>
     </div>
-    
-    <div class="footer">Just pull the trigger. Read the full project introduction on 
-    <a href="https://github.com/omnifrog-art/button-of-dictator"
-       id="github-link"
-       class="link"
-       target="_blank"
-       rel="noopener">
-       GitHub →
-    </a></div>
-    
+
+    <div class="footer">Just pull the trigger. Read the full project introduction on
+      <a href="https://github.com/omnifrog-art/button-of-dictator" id="github-link" class="link" target="_blank"
+        rel="noopener">
+        GitHub →
+      </a>
+    </div>
+
   </div>
 
   <script>
@@ -757,6 +755,76 @@
     })();
   </script>
 
+  <script>
+    (function () {
+      // —— 条件：移动端；尊重减少动效；有滚动；只滚一次 ——
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      if (!isMobile) return;
+      if (prefersReducedMotion) return;
+      if (location.hash) return;
+      if (window.scrollY > 0) return;
+
+      let autoScrolled = false;
+      let cancel = false;
+
+      // 用户一触发交互就取消自动滚
+      ['touchstart', 'wheel', 'keydown'].forEach(evt => {
+        window.addEventListener(evt, () => { cancel = true; }, { passive: true, once: true });
+      });
+
+      function canScroll() {
+        const doc = document.scrollingElement || document.documentElement;
+        return (doc.scrollHeight - window.innerHeight) > 8;
+      }
+
+      // 1s ease-out 页面级滚动到底
+      function scrollToBottomEaseOut(duration = 1000) {
+        const doc = document.scrollingElement || document.documentElement;
+        const start = doc.scrollTop;
+        const end = Math.max(0, doc.scrollHeight - window.innerHeight);
+        const dist = end - start;
+        if (dist <= 0) return;
+
+        const t0 = performance.now();
+        const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+
+        function step(t) {
+          if (cancel) return;
+          const p = Math.min(1, (t - t0) / duration);
+          const y = start + dist * easeOutCubic(p);
+          window.scrollTo(0, y);
+          if (p < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+      }
+
+      function collapseBarAndScrollOnce() {
+        if (autoScrolled || cancel || !canScroll()) return;
+        autoScrolled = true;
+
+        // 轻推 1px 触发 iOS Safari 地址栏折叠（仅移动端 Safari）
+        if (isSafari) window.scrollTo(0, 1);
+
+        // 只滚“页面”到底（终端不做内部滚动）
+        scrollToBottomEaseOut(1000);
+      }
+
+      // 等首屏稳定后执行
+      window.addEventListener('load', () => {
+        requestAnimationFrame(() => setTimeout(collapseBarAndScrollOnce, 250));
+      });
+
+      // 视口变化（横竖屏/地址栏高度变化）再尝试一次，但仍只滚“一次”
+      ['orientationchange', 'resize', 'visibilitychange'].forEach(evt => {
+        window.addEventListener(evt, () => {
+          requestAnimationFrame(() => setTimeout(collapseBarAndScrollOnce, 150));
+        }, { passive: true });
+      });
+    })();
+  </script>
 </body>
 
 </html>
