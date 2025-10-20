@@ -761,15 +761,16 @@
   const ua = navigator.userAgent;
   const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
   const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   if (!isMobile) return;
-  if (prefersReducedMotion) return;
+  if (prefersReduced) return;
   if (location.hash) return;
   if (window.scrollY > 0) return;
 
   let autoScrolled = false;
   let cancel = false;
+  const doc = document.scrollingElement || document.documentElement;
 
   // 用户一有交互就取消自动滚
   ['touchstart','wheel','keydown','mousedown'].forEach(evt => {
@@ -777,13 +778,11 @@
   });
 
   function canScroll() {
-    const doc = document.scrollingElement || document.documentElement;
     return (doc.scrollHeight - window.innerHeight) > 8;
-    }
+  }
 
   // rAF 自定义 1s ease-out 滚动
   function scrollToYEaseOut(targetY, duration = 1000) {
-    const doc = document.scrollingElement || document.documentElement;
     const start = doc.scrollTop;
     const dist = targetY - start;
     if (Math.abs(dist) < 1) return;
@@ -801,64 +800,92 @@
     requestAnimationFrame(step);
   }
 
-  function clamp(val, min, max) {
-    return Math.max(min, Math.min(max, val));
+  const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+
+  // 等布局稳定（连续两次测得尺寸一致）
+  async function waitForStableLayout({ minDelay = 0 } = {}) {
+    if (minDelay) await new Promise(r => setTimeout(r, minDelay));
+
+    // 字体就绪（可避免 FOIT/FOUT 引起的跳动）
+    if (document.fonts && document.fonts.ready) {
+      try { await document.fonts.ready; } catch(e) {}
+    }
+
+    // 连续两帧尺寸一致视为稳定
+    let lastH = -1, lastW = -1, stableCount = 0;
+    return new Promise(resolve => {
+      function tick() {
+        const h = doc.scrollHeight;
+        const w = window.innerHeight;
+        if (h === lastH && w === lastW) {
+          stableCount++;
+        } else {
+          stableCount = 0;
+          lastH = h; lastW = w;
+        }
+        if (stableCount >= 2) { resolve(); }
+        else { requestAnimationFrame(tick); }
+      }
+      requestAnimationFrame(tick);
+    });
   }
 
-  function measureAndScroll() {
+  async function measureAndScroll() {
     if (autoScrolled || cancel || !canScroll()) return;
     autoScrolled = true;
 
-    // iOS Safari 先轻推触发地址栏折叠，再测量更准确
-    if (isSafari) window.scrollTo(0, 1);
+    // iOS Safari 先轻推触发地址栏折叠，然后等两帧
+    if (isSafari) {
+      window.scrollTo(0, 1);
+      await new Promise(r => requestAnimationFrame(() =>
+        requestAnimationFrame(r)
+      ));
+    }
 
-    // —— 目标：让 #terminateBtn 居中；若无法居中则滚到底 ——
-    const doc = document.scrollingElement || document.documentElement;
+    // 再等待整体排版稳定（图片/字体/地址栏）
+    await waitForStableLayout();
+
+    if (cancel) return;
+
     const maxY = Math.max(0, doc.scrollHeight - window.innerHeight);
-
-    const el = document.getElementById('terminate-Btn'); // 给按钮加这个 id
     let targetY = maxY; // 默认到底
 
+    // ⚠️ 修正：确保 id 与实际一致（示例用 'terminateBtn'）
+    const el = document.getElementById('terminate-btn');
     if (el) {
       const rect = el.getBoundingClientRect();
-      const elCenterFromViewportTop = rect.top + rect.height / 2;
       const currentScroll = window.pageYOffset || doc.scrollTop || 0;
-
       // 让按钮中心对齐视口中心
-      const desired = currentScroll + elCenterFromViewportTop - (window.innerHeight / 2);
-
-      // 目标滚动位置需落在 [0, maxY] 之间
+      const desired = currentScroll + rect.top + rect.height / 2 - (window.innerHeight / 2);
       targetY = clamp(Math.round(desired), 0, maxY);
 
-      // 如果距离底部不足半屏，实际观感会更像“到底”，直接到底更稳
-      const nearBottomThreshold = window.innerHeight * 0.5;
-      if (maxY - targetY < nearBottomThreshold) {
+      // 如果距离底部不足半屏，直接到底，观感更稳
+      if (maxY - targetY < window.innerHeight * 0.5) {
         targetY = maxY;
       }
     }
 
-    scrollToYEaseOut(targetY, 1000); // 1s ease-out
+    if (!cancel) scrollToYEaseOut(targetY, 1000);
   }
 
   // —— 等“整页完全加载且排版稳定”再执行 ——
-  // load 触发后再用 rAF + setTimeout 双保险，给字体/图片一个喘息
   window.addEventListener('load', () => {
-  requestAnimationFrame(() => setTimeout(() => {
-    // 再额外延迟 1.5 秒再执行
-    setTimeout(() => {
-      requestAnimationFrame(measureAndScroll);
-    }, 1500);
-  }, 250));
+    requestAnimationFrame(() => setTimeout(async () => {
+      // 额外延迟 1.5s（你原设定）
+      await new Promise(r => setTimeout(r, 1500));
+      requestAnimationFrame(() => { measureAndScroll(); });
+    }, 250));
   });
 
   // 视口变化（横竖屏/地址栏高度变化）再尝试一次，但仍只滚“一次”
   ['orientationchange','resize','visibilitychange'].forEach(evt => {
     window.addEventListener(evt, () => {
-      requestAnimationFrame(() => setTimeout(measureAndScroll, 150));
+      requestAnimationFrame(() => setTimeout(() => { measureAndScroll(); }, 150));
     }, { passive:true });
   });
 })();
 </script>
+
 </body>
 
 </html>
