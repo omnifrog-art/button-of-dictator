@@ -760,13 +760,8 @@
   // —— 条件：移动端；尊重减少动态；无锚点；用户未先滚动 ——
   const ua = navigator.userAgent;
   const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
-  const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
   const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  if (!isMobile) return;
-  if (prefersReduced) return;
-  if (location.hash) return;
-  if (window.scrollY > 0) return;
+  if (!isMobile || prefersReduced || location.hash || window.scrollY > 0) return;
 
   let autoScrolled = false;
   let cancel = false;
@@ -774,51 +769,27 @@
   const root = document.documentElement;
   const scroller = document.scrollingElement || root;
 
-  // 关掉原生 smooth，避免和自定义 rAF 打架
+  // 关闭原生 smooth，避免与自定义 rAF 打架
   const prevScrollBehavior = root.style.scrollBehavior;
   root.style.scrollBehavior = 'auto';
 
-  // 任意用户交互都取消自动滚
+  // 用户一有交互就取消
   ['touchstart','wheel','keydown','mousedown'].forEach(evt => {
     window.addEventListener(evt, () => { cancel = true; }, { passive:true, once:true });
   });
 
-  function getVH() {
-    // iOS 下用 visualViewport 更准
-    return window.visualViewport ? Math.round(window.visualViewport.height) : window.innerHeight;
-  }
-  function canScroll() {
-    return (scroller.scrollHeight - getVH()) > 8;
-  }
-  function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+  // 视口高度（优先 visualViewport）
+  const getVH = () => window.visualViewport ? Math.round(window.visualViewport.height) : window.innerHeight;
+  const canScroll = () => (scroller.scrollHeight - getVH()) > 8;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-  // 等待 visualViewport 稳定（地址栏收起）+ 连续两帧尺寸一致
-  async function waitViewportStable() {
-    // 字体就绪，避免因 FOIT/FOUT 抖动
-    if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch(e){} }
-
-    // iOS：等待 visualViewport 静默 120ms
-    if (window.visualViewport) {
-      await new Promise(resolve => {
-        let timer = null;
-        const quiet = 120;
-        const onResize = () => {
-          clearTimeout(timer);
-          timer = setTimeout(() => {
-            window.visualViewport.removeEventListener('resize', onResize);
-            resolve();
-          }, quiet);
-        };
-        window.visualViewport.addEventListener('resize', onResize, { passive:true });
-        onResize(); // 触发一次兜底
-      });
-    }
-
-    // 连续两帧一致
+  // 等布局稳定（字体就绪 + 连续两帧一致）
+  async function waitStable() {
+    if (document.fonts?.ready) { try { await document.fonts.ready; } catch(e){} }
     await new Promise(resolve => {
       let lastH=-1, lastV=-1, stable=0;
-      const tick = () => {
-        const h = scroller.scrollHeight, v = getVH();
+      const tick=()=>{
+        const h=scroller.scrollHeight, v=getVH();
         if (h===lastH && v===lastV) stable++; else { stable=0; lastH=h; lastV=v; }
         if (stable>=2) resolve(); else requestAnimationFrame(tick);
       };
@@ -826,53 +797,60 @@
     });
   }
 
-  // 先让 iOS 地址栏收起（轻推 + 等稳定）
-  async function collapseIOSBar() {
-    if (!isSafari) return;
-    // 轻推 1px 触发收起；给两帧时间
-    scroller.scrollTop = Math.max(0, scroller.scrollTop + 1);
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-    await waitViewportStable();
-  }
-
-  // 自定义 1s ease-out 滚动到底
-  function scrollToBottomEaseOut(duration=1000) {
-    const vh = getVH();
-    const maxY = Math.max(0, scroller.scrollHeight - vh);
+  // 自定义 1s ease-out 滚动
+  function scrollToYEaseOut(targetY, duration=1000) {
     const start = scroller.scrollTop;
-    const dist = maxY - start;
+    const dist = targetY - start;
     if (Math.abs(dist) < 1) return;
 
     const t0 = performance.now();
-    const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+    const easeOut = t => 1 - Math.pow(1 - t, 3);
     let lastY = start;
 
     function step(ts){
       if (cancel) return;
       const p = Math.min(1, (ts - t0) / duration);
-      const y = clamp(start + dist * easeOutCubic(p), 0, maxY);
-      if (Math.abs(y - lastY) > 0.5){ scroller.scrollTop = y; lastY = y; }
+      const y = clamp(start + dist * easeOut(p), 0, targetY > start ? targetY : start);
+      if (Math.abs(y - lastY) > 0.5) { scroller.scrollTop = y; lastY = y; }
       if (p < 1) requestAnimationFrame(step);
     }
     requestAnimationFrame(step);
   }
 
-  async function run() {
+  // 计算 footer 顶部 - 0.75rem 的目标位置
+  function computeFooterTargetY() {
+    const footer = document.querySelector('#page-footer, footer, .footer');
+    const rem = parseFloat(getComputedStyle(root).fontSize) || 16;
+    const offset = 0.75 * rem; // 0.75rem
+    const vh = getVH();
+    const maxY = Math.max(0, scroller.scrollHeight - vh);
+
+    if (!footer) return maxY; // 没有 footer 就到底
+
+    const rect = footer.getBoundingClientRect();
+    const currentScroll = scroller.scrollTop;
+    const footerTopAbs = currentScroll + rect.top;
+
+    // 让“footer 顶部”进入视口后再多滚 0.75rem
+    return clamp(Math.round(footerTopAbs - offset), 0, maxY);
+  }
+
+  async function run(){
     if (autoScrolled || cancel || !canScroll()) return;
     autoScrolled = true;
 
-    await collapseIOSBar();          // ① 先收起地址栏（仅 iOS）
-    await waitViewportStable();      // ② 再确认尺寸稳定
-    if (!cancel) scrollToBottomEaseOut(1000); // ③ 一次性滚到底
+    // 给页面一点喘息：load+rAF+250ms+额外1.5s
+    await new Promise(r => setTimeout(r, 1750));
+    await waitStable();
+
+    if (cancel) return;
+
+    const targetY = computeFooterTargetY();
+    scrollToYEaseOut(targetY, 1000);
   }
 
-  // 等整页加载 + 缓冲，再执行
   window.addEventListener('load', () => {
-    requestAnimationFrame(() => setTimeout(async () => {
-      // 额外缓冲 1.5s（可调）
-      await new Promise(r => setTimeout(r, 1500));
-      requestAnimationFrame(run);
-    }, 250));
+    requestAnimationFrame(() => setTimeout(run, 250));
   });
 
   // 视口变化再尝试一次，但仍只滚“一次”
@@ -886,9 +864,6 @@
   window.addEventListener('pagehide', () => { root.style.scrollBehavior = prevScrollBehavior; });
 })();
 </script>
-
-
-
 </body>
 
 </html>
