@@ -803,7 +803,7 @@
     else root.classList.remove('scroll-animating');
   }
 
-  // 计算目标：让 .footer 的“底边”落在视口底部之下 offsetRem（默认 1rem）
+  // 计算目标：让 .footer 的“顶边”落在视口底部之下 offsetRem（默认 1rem）
   function computeFooterHideBy(offsetRem = 1) {
     const footer = document.querySelector('.footer');
     if (!footer) return null; // 没有 footer 就不滚
@@ -815,10 +815,10 @@
 
     const rect = footer.getBoundingClientRect();
     const currentScroll = scroller.scrollTop;
-    const footerBottomAbs = currentScroll + rect.bottom;
+    const footerTopAbs = currentScroll + rect.top;  // ← 用顶边
 
-    // 让 footer 底边位于视口底部 + offsetPx（即刚好不可见，还差 offset 才露出）
-    const target = footerBottomAbs - (vh + offsetPx);
+    // 让 footer 顶边位于视口底部 + offsetPx（即刚好不可见，还差 offset 才露出）
+    const target = footerTopAbs - (vh + offsetPx);  // ← 顶边公式
     return clamp(Math.round(target), 0, maxY);
   }
 
