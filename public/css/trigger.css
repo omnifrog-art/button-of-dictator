@@ -292,7 +292,7 @@ button {
         inset 0 0 0 1px rgba(255, 255, 255, 0.04);
     transition: background 0.25s ease,
         box-shadow 0.25s ease,
-        transform 0.15s ease;
+        transform 0.25s ease;
 }
 
 /* 按钮边缘模糊层（与卡片::before一致） */
@@ -605,6 +605,7 @@ h1 {
 .link:hover::after {
   width: 100%;
 }
+
 
 
 
