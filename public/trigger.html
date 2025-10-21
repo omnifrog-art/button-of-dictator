@@ -885,6 +885,27 @@
   window.addEventListener('pagehide', () => { root.style.scrollBehavior = prevScrollBehavior; });
 })();
 </script>
+
+  <script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  const supabase = createClient("https://qvslxmokvbjhslbxdhtb.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2c2x4bW9rdmJqaHNsYnhkaHRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2ODM1MzYsImV4cCI6MjA2MTI1OTUzNn0.fJ9jTo9yrKWZQ-Hif2-YJo5jWF1RolIsIeZSVB5TPxA");
+
+  const sub = location.hostname.split(".")[0];
+  // 1️⃣ 打点“已访问”
+  try { await supabase.rpc("mark_accessed", { _subdomain: sub }); } catch {}
+
+  // 2️⃣ 终止按钮被触发时（你已有的 terminate 动作）
+  async function markTerminated() {
+    try { await supabase.rpc("mark_terminated", { _subdomain: sub }); } catch {}
+  }
+
+  // 假设你 terminate 的逻辑在这里触发
+  document.getElementById('kill-btn')?.addEventListener('click', async () => {
+    await doTerminate(); // 你的既有逻辑
+    await markTerminated(); // 通知数据库
+  });
+</script>
+
 </body>
 
 </html>
