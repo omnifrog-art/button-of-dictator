@@ -1,0 +1,20 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Assigning…</title>
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  const supabase = createClient("https://YOUR-PROJECT.supabase.co", "YOUR-ANON-KEY");
+
+  try {
+    const { data, error } = await supabase.rpc("claim_subdomain", {});
+    if (error) throw error;
+    const sub = data?.[0]?.subdomain;
+    if (!sub) throw new Error("Pool empty");
+    location.replace(`https://${sub}.buttonofdictator.xyz/`);
+  } catch (e) {
+    document.body.innerHTML = `<div style="color:#ff4f4f">Failed to assigne：${e.message}</div>`;
+  }
+</script>
+<body style="margin:0;display:grid;place-items:center;height:100vh;background:#0e0e0e;color:#ddd;font:16px/1.5 system-ui">
+  Assigning a subdomain…
+</body>
