@@ -3,7 +3,7 @@
 <title>Assigning…</title>
 <script type="module">
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-  const supabase = createClient("https://YOUR-PROJECT.supabase.co", "YOUR-ANON-KEY");
+  const supabase = createClient("https://qvslxmokvbjhslbxdhtb.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2c2x4bW9rdmJqaHNsYnhkaHRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2ODM1MzYsImV4cCI6MjA2MTI1OTUzNn0.fJ9jTo9yrKWZQ-Hif2-YJo5jWF1RolIsIeZSVB5TPxA");
 
   try {
     const { data, error } = await supabase.rpc("claim_subdomain", {});
