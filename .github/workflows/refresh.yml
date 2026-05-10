@@ -2,8 +2,8 @@ name: Refresh Subdomains
 
 on:
   schedule:
-    - cron: '0 */12 * * *'  # 每12小时 UTC时间刷新一次
-  workflow_dispatch:      # 允许手动触发
+    - cron: '0 */12 * * *'
+  workflow_dispatch:
 
 jobs:
   refresh:
@@ -11,10 +11,10 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
